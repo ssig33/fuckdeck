@@ -61,7 +61,9 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
         </Text>
       )}
       <Group align="flex-start" gap="sm">
-        <Avatar src={displayStatus.account.avatar} radius="xl" size="md" />
+        <Anchor href={displayStatus.account.url} target="_blank" rel="noopener noreferrer">
+          <Avatar src={displayStatus.account.avatar} radius="xl" size="md" />
+        </Anchor>
         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
           <Group gap="xs">
             <Text size="sm" fw={600}>

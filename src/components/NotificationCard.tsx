@@ -41,7 +41,9 @@ export function NotificationCard({ unified }: NotificationCardProps) {
       </Group>
 
       <Group align="flex-start" gap="sm">
-        <Avatar src={account.avatar} radius="xl" size="sm" />
+        <Anchor href={account.url} target="_blank" rel="noopener noreferrer">
+          <Avatar src={account.avatar} radius="xl" size="sm" />
+        </Anchor>
         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
           <Group gap="xs">
             <Text size="sm" fw={600}>
