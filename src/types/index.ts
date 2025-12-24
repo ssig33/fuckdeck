@@ -62,6 +62,7 @@ export interface PostStatusOptions {
   spoiler_text?: string;
   sensitive?: boolean;
   media_ids?: string[];
+  in_reply_to_id?: string;
 }
 
 export * from "./notification";

@@ -7,6 +7,7 @@ import {
   reblogStatus,
   unreblogStatus,
 } from "../utils/mastodon";
+import { ReplyModal } from "./ReplyModal";
 
 interface StatusCardProps {
   status: MastodonStatus;
@@ -24,6 +25,8 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
   const isReblog = status.reblog !== null;
   const [favourited, setFavourited] = useState(displayStatus.favourited);
   const [reblogged, setReblogged] = useState(displayStatus.reblogged);
+  const [replyModalOpened, setReplyModalOpened] = useState(false);
+  const [replyTo, setReplyTo] = useState<MastodonStatus | null>(null);
 
   const handleFavourite = async () => {
     try {
@@ -51,6 +54,16 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
     } catch (e) {
       console.error("Failed to toggle reblog:", e);
     }
+  };
+
+  const handleReply = () => {
+    setReplyTo(displayStatus);
+    setReplyModalOpened(true);
+  };
+
+  const handleCloseReply = () => {
+    setReplyModalOpened(false);
+    setReplyTo(null);
   };
 
   return (
@@ -89,6 +102,14 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
             >
               {formatDate(displayStatus.created_at)}
             </Anchor>
+            <ActionIcon
+              variant="subtle"
+              size="xs"
+              color="gray"
+              onClick={handleReply}
+            >
+              💬
+            </ActionIcon>
             <ActionIcon
               variant="subtle"
               size="xs"
@@ -134,6 +155,11 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
           )}
         </Stack>
       </Group>
+      <ReplyModal
+        opened={replyModalOpened}
+        onClose={handleCloseReply}
+        replyTo={replyTo}
+      />
     </Card>
   );
 }
