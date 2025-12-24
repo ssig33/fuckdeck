@@ -1,0 +1,52 @@
+export interface MastodonUser {
+  id: string;
+  username: string;
+  acct: string;
+  display_name: string;
+  avatar: string;
+  avatar_static: string;
+  url: string;
+}
+
+export interface MediaAttachment {
+  id: string;
+  type: "image" | "video" | "gifv" | "audio" | "unknown";
+  url: string;
+  preview_url: string;
+  description: string | null;
+}
+
+export interface MastodonStatus {
+  id: string;
+  created_at: string;
+  content: string;
+  account: MastodonUser;
+  reblog: MastodonStatus | null;
+  media_attachments: MediaAttachment[];
+  favourites_count: number;
+  reblogs_count: number;
+  replies_count: number;
+  url: string;
+  spoiler_text: string;
+  sensitive: boolean;
+}
+
+export interface Account {
+  id: string;
+  instance: string;
+  accessToken: string;
+  clientId: string;
+  clientSecret: string;
+  user: MastodonUser | null;
+}
+
+export interface PendingAuth {
+  instance: string;
+  clientId: string;
+  clientSecret: string;
+}
+
+export interface StoredData {
+  accounts: Account[];
+  pendingAuth: PendingAuth | null;
+}
