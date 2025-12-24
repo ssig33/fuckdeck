@@ -1,45 +1,60 @@
-# FuckDeck アーキテクチャ
+# FuckDeck Architecture
 
-TweetDeckライクなMastodonクライアント。React + Mantine で構築。
+A TweetDeck-like Mastodon client built with React + Mantine.
 
-## ディレクトリ構成
+## Directory Structure
 
 ```
 src/
-├── index.tsx           # エントリポイント
-├── App.tsx             # メインアプリケーション
+├── index.tsx           # Entry point
+├── App.tsx             # Main application
 ├── types/
-│   └── index.ts        # 型定義
+│   └── index.ts        # Type definitions
 ├── hooks/
-│   ├── useAccounts.tsx # アカウント管理
-│   └── useTimeline.ts  # タイムライン取得
+│   ├── useAccounts.tsx # Account management
+│   └── useTimeline.ts  # Timeline fetching
 ├── components/
 │   ├── Header.tsx
 │   ├── LoginModal.tsx
+│   ├── Sidebar.tsx
+│   ├── ComposeForm.tsx
 │   ├── ColumnLayout.tsx
 │   ├── TimelineColumn.tsx
 │   └── StatusCard.tsx
 └── utils/
-    ├── storage.ts      # localStorage操作
+    ├── storage.ts      # localStorage operations
     └── mastodon.ts     # Mastodon API
 ```
 
-## 状態管理
+## Layout
+
+```
+┌─────────────────────────────────────┐
+│              Header                 │
+├─────────┬───────────────────────────┤
+│ Sidebar │       ColumnLayout        │
+│ (300px) │ [Column1] [Column2] ...   │
+└─────────┴───────────────────────────┘
+```
+
+## State Management
 
 ```
 MantineProvider
 └── AccountProvider (React Context)
     └── App
         ├── Header
+        ├── Sidebar
+        │   └── ComposeForm
         ├── ColumnLayout
-        │   └── TimelineColumn[] (各アカウントごと)
+        │   └── TimelineColumn[] (per account)
         │       └── StatusCard[]
         └── LoginModal
 ```
 
 ### AccountContext
 
-アカウント情報をアプリ全体で共有する。
+Shares account information across the app.
 
 ```typescript
 interface AccountContextValue {
@@ -54,7 +69,7 @@ interface AccountContextValue {
 
 ### localStorage
 
-キー: `fuckdeck_accounts`
+Key: `fuckdeck_accounts`
 
 ```typescript
 interface StoredData {
@@ -63,56 +78,72 @@ interface StoredData {
 }
 ```
 
-## 認証フロー
+## Authentication Flow
 
 ```
-[ユーザー]
+[User]
     │
-    ▼ インスタンスURL入力
+    ▼ Enter instance URL
 [LoginModal]
     │
     ▼ POST /api/v1/apps
 [Mastodon] → clientId, clientSecret
     │
-    ▼ pendingAuthをlocalStorageに保存
+    ▼ Save pendingAuth to localStorage
 [LoginModal]
     │
-    ▼ /oauth/authorize にリダイレクト
-[Mastodon] → ユーザー認可
+    ▼ Redirect to /oauth/authorize
+[Mastodon] → User authorization
     │
-    ▼ ?code=xxx でコールバック
+    ▼ Callback with ?code=xxx
 [App.tsx]
     │
     ▼ POST /oauth/token
 [Mastodon] → accessToken
     │
     ▼ GET /api/v1/accounts/verify_credentials
-[Mastodon] → ユーザー情報
+[Mastodon] → User info
     │
-    ▼ アカウント保存、pendingAuth削除
+    ▼ Save account, clear pendingAuth
 [AccountContext]
 ```
 
-## タイムライン取得
+## Timeline Fetching
 
-`useTimeline` フックが各アカウントのタイムラインを管理する。
+`useTimeline` hook manages each account's timeline.
 
-- 初回: `GET /api/v1/timelines/home` で取得
-- 以降: 60秒間隔でポーリング（`since_id` で差分取得）
-- 新しい投稿は先頭に追加
+- Initial: Fetch via `GET /api/v1/timelines/home`
+- Thereafter: Poll every 60 seconds (using `since_id` for delta fetch)
+- New posts are prepended
 
-## コンポーネント
+## Posting
 
-| コンポーネント | 責務 |
-|--------------|------|
-| Header | タイトル表示、アカウント追加ボタン |
-| LoginModal | インスタンスURL入力、OAuth開始 |
-| ColumnLayout | アカウントごとのカラムを横並び表示 |
-| TimelineColumn | 1アカウントのタイムライン表示、削除ボタン |
-| StatusCard | 1投稿の表示（リブログ対応） |
+`ComposeForm` component handles status posting.
 
-## 設計ルール
+- Select account from dropdown
+- Content Warning (CW) input
+- Text content with character counter (500 chars)
+- Image attachments (up to 4)
+- Visibility selection (public/unlisted/private/direct)
 
-- default export 禁止（named export のみ）
-- components はフラット配置（サブディレクトリなし）
-- API関数は utils に配置
+API functions:
+- `uploadMedia`: `POST /api/v2/media`
+- `postStatus`: `POST /api/v1/statuses`
+
+## Components
+
+| Component | Responsibility |
+|-----------|----------------|
+| Header | Title display, add account button |
+| LoginModal | Instance URL input, OAuth initiation |
+| Sidebar | Container for ComposeForm |
+| ComposeForm | Post composition with media upload |
+| ColumnLayout | Horizontal layout of account columns |
+| TimelineColumn | Single account timeline, delete button |
+| StatusCard | Single post display (reblog support) |
+
+## Design Rules
+
+- No default exports (named exports only)
+- Components are flat (no subdirectories)
+- API functions go in utils
