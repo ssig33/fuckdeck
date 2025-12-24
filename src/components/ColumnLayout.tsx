@@ -1,6 +1,7 @@
 import { Box, Text } from "@mantine/core";
 import { useAccounts } from "../hooks/useAccounts";
 import { TimelineColumn } from "./TimelineColumn";
+import { NotificationColumn } from "./NotificationColumn";
 
 export function ColumnLayout() {
   const { accounts } = useAccounts();
@@ -33,6 +34,7 @@ export function ColumnLayout() {
       {accounts.map((account) => (
         <TimelineColumn key={account.id} account={account} />
       ))}
+      <NotificationColumn />
     </Box>
   );
 }

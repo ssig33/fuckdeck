@@ -60,3 +60,5 @@ export interface PostStatusOptions {
   sensitive?: boolean;
   media_ids?: string[];
 }
+
+export * from "./notification";

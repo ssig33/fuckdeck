@@ -1,0 +1,6 @@
+.notification-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin-top: 4px;
+}
