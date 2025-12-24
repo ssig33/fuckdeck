@@ -74,6 +74,12 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
             </Text>
           </Group>
           <Group gap="xs">
+            <Text size="xs" c="dimmed">
+              {displayStatus.visibility === "public" && "🌐"}
+              {displayStatus.visibility === "unlisted" && "🔓"}
+              {displayStatus.visibility === "private" && "🔒"}
+              {displayStatus.visibility === "direct" && "✉️"}
+            </Text>
             <Anchor
               href={displayStatus.url}
               target="_blank"
@@ -91,14 +97,16 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
             >
               {favourited ? "★" : "☆"}
             </ActionIcon>
-            <ActionIcon
-              variant="subtle"
-              size="xs"
-              color={reblogged ? "green" : "gray"}
-              onClick={handleReblog}
-            >
-              🔁
-            </ActionIcon>
+{(displayStatus.visibility === "public" || displayStatus.visibility === "unlisted") && (
+              <ActionIcon
+                variant="subtle"
+                size="xs"
+                color={reblogged ? "green" : "gray"}
+                onClick={handleReblog}
+              >
+                🔁
+              </ActionIcon>
+            )}
           </Group>
           {displayStatus.spoiler_text && (
             <Text size="sm" c="yellow">

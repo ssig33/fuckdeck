@@ -31,6 +31,7 @@ export interface MastodonStatus {
   sensitive: boolean;
   favourited: boolean;
   reblogged: boolean;
+  visibility: Visibility;
 }
 
 export interface Account {
