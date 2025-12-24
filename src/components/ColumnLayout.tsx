@@ -26,7 +26,8 @@ export function ColumnLayout() {
         flex: 1,
         display: "flex",
         flexDirection: "row",
-        overflow: "auto",
+        overflowX: "auto",
+        overflowY: "hidden",
       }}
     >
       {accounts.map((account) => (

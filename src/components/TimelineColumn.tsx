@@ -5,10 +5,11 @@ import {
   Text,
   ActionIcon,
   Loader,
-  ScrollArea,
   Stack,
 } from "@mantine/core";
-import { Account } from "../types";
+import { useElementSize } from "@mantine/hooks";
+import { List, useDynamicRowHeight } from "react-window";
+import { Account, MastodonStatus } from "../types";
 import { useTimeline } from "../hooks/useTimeline";
 import { StatusCard } from "./StatusCard";
 import { useAccounts } from "../hooks/useAccounts";
@@ -17,9 +18,29 @@ interface TimelineColumnProps {
   account: Account;
 }
 
+interface RowProps {
+  index: number;
+  style: React.CSSProperties;
+  rowRef: React.Ref<HTMLDivElement>;
+  statuses: MastodonStatus[];
+}
+
+function Row({ index, style, rowRef, statuses }: RowProps) {
+  const status = statuses[index];
+  return (
+    <div style={style} ref={rowRef}>
+      <StatusCard status={status} />
+    </div>
+  );
+}
+
 export function TimelineColumn({ account }: TimelineColumnProps) {
   const { statuses, isLoading, error } = useTimeline(account);
   const { removeAccount } = useAccounts();
+  const { ref, height } = useElementSize();
+  const rowHeight = useDynamicRowHeight({
+    defaultRowHeight: 150,
+  });
 
   return (
     <Box
@@ -60,7 +81,7 @@ export function TimelineColumn({ account }: TimelineColumnProps) {
         </ActionIcon>
       </Group>
 
-      <ScrollArea style={{ flex: 1 }}>
+      <Box ref={ref} style={{ flex: 1, overflow: "hidden" }}>
         {isLoading && statuses.length === 0 && (
           <Box p="md" style={{ textAlign: "center" }}>
             <Loader size="sm" />
@@ -73,10 +94,17 @@ export function TimelineColumn({ account }: TimelineColumnProps) {
           </Text>
         )}
 
-        {statuses.map((status) => (
-          <StatusCard key={status.id} status={status} />
-        ))}
-      </ScrollArea>
+        {statuses.length > 0 && height > 0 && (
+          <List
+            rowCount={statuses.length}
+            rowHeight={rowHeight}
+            rowComponent={Row}
+            rowProps={{ statuses }}
+            height={height}
+            width={350}
+          />
+        )}
+      </Box>
     </Box>
   );
 }

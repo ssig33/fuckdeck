@@ -22,6 +22,7 @@
     "esbuild-server": "^0.3.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-window": "^2.2.3",
     "tsx": "^4.21.0"
   },
   "devDependencies": {
