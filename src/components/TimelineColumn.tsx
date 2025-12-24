@@ -23,13 +23,15 @@ interface RowProps {
   style: React.CSSProperties;
   rowRef: React.Ref<HTMLDivElement>;
   statuses: MastodonStatus[];
+  instance: string;
+  token: string;
 }
 
-function Row({ index, style, rowRef, statuses }: RowProps) {
+function Row({ index, style, rowRef, statuses, instance, token }: RowProps) {
   const status = statuses[index];
   return (
     <div style={style} ref={rowRef}>
-      <StatusCard status={status} />
+      <StatusCard status={status} instance={instance} token={token} />
     </div>
   );
 }
@@ -99,7 +101,7 @@ export function TimelineColumn({ account }: TimelineColumnProps) {
             rowCount={statuses.length}
             rowHeight={rowHeight}
             rowComponent={Row}
-            rowProps={{ statuses }}
+            rowProps={{ statuses, instance: account.instance, token: account.accessToken }}
             height={height}
             width={350}
           />

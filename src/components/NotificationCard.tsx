@@ -1,4 +1,4 @@
-import { Card, Group, Avatar, Text, Stack, Box, Badge } from "@mantine/core";
+import { Card, Group, Avatar, Text, Stack, Box, Badge, Anchor } from "@mantine/core";
 import { UnifiedNotification, NotificationType } from "../types";
 
 interface NotificationCardProps {
@@ -51,9 +51,21 @@ export function NotificationCard({ unified }: NotificationCardProps) {
               @{account.acct}
             </Text>
           </Group>
-          <Text size="xs" c="dimmed">
-            {formatDate(created_at)}
-          </Text>
+          {status ? (
+            <Anchor
+              href={status.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="xs"
+              c="dimmed"
+            >
+              {formatDate(created_at)}
+            </Anchor>
+          ) : (
+            <Text size="xs" c="dimmed">
+              {formatDate(created_at)}
+            </Text>
+          )}
 
           {status && (
             <Box

@@ -29,6 +29,8 @@ export interface MastodonStatus {
   url: string;
   spoiler_text: string;
   sensitive: boolean;
+  favourited: boolean;
+  reblogged: boolean;
 }
 
 export interface Account {

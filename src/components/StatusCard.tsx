@@ -1,8 +1,17 @@
-import { Card, Group, Avatar, Text, Stack, Image, Box } from "@mantine/core";
+import { useState } from "react";
+import { Card, Group, Avatar, Text, Stack, Image, Box, Anchor, ActionIcon } from "@mantine/core";
 import { MastodonStatus } from "../types";
+import {
+  favouriteStatus,
+  unfavouriteStatus,
+  reblogStatus,
+  unreblogStatus,
+} from "../utils/mastodon";
 
 interface StatusCardProps {
   status: MastodonStatus;
+  instance: string;
+  token: string;
 }
 
 function formatDate(dateString: string): string {
@@ -10,9 +19,39 @@ function formatDate(dateString: string): string {
   return date.toLocaleString();
 }
 
-export function StatusCard({ status }: StatusCardProps) {
+export function StatusCard({ status, instance, token }: StatusCardProps) {
   const displayStatus = status.reblog ?? status;
   const isReblog = status.reblog !== null;
+  const [favourited, setFavourited] = useState(displayStatus.favourited);
+  const [reblogged, setReblogged] = useState(displayStatus.reblogged);
+
+  const handleFavourite = async () => {
+    try {
+      if (favourited) {
+        await unfavouriteStatus(instance, token, displayStatus.id);
+        setFavourited(false);
+      } else {
+        await favouriteStatus(instance, token, displayStatus.id);
+        setFavourited(true);
+      }
+    } catch (e) {
+      console.error("Failed to toggle favourite:", e);
+    }
+  };
+
+  const handleReblog = async () => {
+    try {
+      if (reblogged) {
+        await unreblogStatus(instance, token, displayStatus.id);
+        setReblogged(false);
+      } else {
+        await reblogStatus(instance, token, displayStatus.id);
+        setReblogged(true);
+      }
+    } catch (e) {
+      console.error("Failed to toggle reblog:", e);
+    }
+  };
 
   return (
     <Card p="sm" style={{ borderBottom: "1px solid #333" }} radius={0}>
@@ -32,9 +71,33 @@ export function StatusCard({ status }: StatusCardProps) {
               @{displayStatus.account.acct}
             </Text>
           </Group>
-          <Text size="xs" c="dimmed">
-            {formatDate(displayStatus.created_at)}
-          </Text>
+          <Group gap="xs">
+            <Anchor
+              href={displayStatus.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="xs"
+              c="dimmed"
+            >
+              {formatDate(displayStatus.created_at)}
+            </Anchor>
+            <ActionIcon
+              variant="subtle"
+              size="xs"
+              color={favourited ? "yellow" : "gray"}
+              onClick={handleFavourite}
+            >
+              {favourited ? "★" : "☆"}
+            </ActionIcon>
+            <ActionIcon
+              variant="subtle"
+              size="xs"
+              color={reblogged ? "green" : "gray"}
+              onClick={handleReblog}
+            >
+              🔁
+            </ActionIcon>
+          </Group>
           {displayStatus.spoiler_text && (
             <Text size="sm" c="yellow">
               CW: {displayStatus.spoiler_text}
