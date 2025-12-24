@@ -5,6 +5,7 @@ import { useAccounts } from "./hooks/useAccounts";
 import { Header } from "./components/Header";
 import { LoginModal } from "./components/LoginModal";
 import { ColumnLayout } from "./components/ColumnLayout";
+import { Sidebar } from "./components/Sidebar";
 import { exchangeToken, verifyCredentials } from "./utils/mastodon";
 
 export function App() {
@@ -63,7 +64,17 @@ export function App() {
       }}
     >
       <Header onAddAccount={openLogin} />
-      <ColumnLayout />
+      <Box
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "row",
+          overflow: "hidden",
+        }}
+      >
+        <Sidebar />
+        <ColumnLayout />
+      </Box>
       <LoginModal opened={loginOpened} onClose={closeLogin} />
     </Box>
   );

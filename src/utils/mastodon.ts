@@ -1,4 +1,9 @@
-import { MastodonUser, MastodonStatus } from "../types";
+import {
+  MastodonUser,
+  MastodonStatus,
+  MediaAttachment,
+  PostStatusOptions,
+} from "../types";
 
 const APP_NAME = "FuckDeck";
 const APP_SCOPES = "read write";
@@ -124,6 +129,54 @@ export async function getHomeTimeline(
 
   if (!response.ok) {
     throw new Error(`Failed to get timeline: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function uploadMedia(
+  instance: string,
+  token: string,
+  file: File,
+  description?: string
+): Promise<MediaAttachment> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (description) {
+    formData.append("description", description);
+  }
+
+  const response = await fetch(`https://${instance}/api/v2/media`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to upload media: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function postStatus(
+  instance: string,
+  token: string,
+  options: PostStatusOptions
+): Promise<MastodonStatus> {
+  const response = await fetch(`https://${instance}/api/v1/statuses`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(options),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to post status: ${response.status}`);
   }
 
   return response.json();

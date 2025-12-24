@@ -50,3 +50,13 @@ export interface StoredData {
   accounts: Account[];
   pendingAuth: PendingAuth | null;
 }
+
+export type Visibility = "public" | "unlisted" | "private" | "direct";
+
+export interface PostStatusOptions {
+  status: string;
+  visibility?: Visibility;
+  spoiler_text?: string;
+  sensitive?: boolean;
+  media_ids?: string[];
+}
