@@ -10,7 +10,7 @@ export function Sidebar() {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        borderRight: "1px solid #333",
+        borderRight: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))",
         padding: 16,
         overflow: "auto",
       }}

@@ -30,7 +30,7 @@ export function NotificationCard({ unified }: NotificationCardProps) {
   const typeInfo = getTypeLabel(type);
 
   return (
-    <Card p="sm" style={{ borderBottom: "1px solid #333" }} radius={0}>
+    <Card p="sm" style={{ borderBottom: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))" }} radius={0}>
       <Group gap="xs" mb="xs">
         <Text size="xs" c="dimmed">
           @{targetAccount.instance}

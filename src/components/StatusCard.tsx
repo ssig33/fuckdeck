@@ -54,7 +54,7 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
   };
 
   return (
-    <Card p="sm" style={{ borderBottom: "1px solid #333" }} radius={0}>
+    <Card p="sm" style={{ borderBottom: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))" }} radius={0}>
       {isReblog && (
         <Text size="xs" c="dimmed" mb="xs">
           {status.account.display_name || status.account.username} reblogged

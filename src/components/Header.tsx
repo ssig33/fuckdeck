@@ -1,12 +1,15 @@
-import { Group, Title, Button, Anchor } from "@mantine/core";
+import { Group, Title, Button, Anchor, SegmentedControl } from "@mantine/core";
+import { useColorScheme } from "../contexts/ColorSchemeContext";
 
 interface HeaderProps {
   onAddAccount: () => void;
 }
 
 export function Header({ onAddAccount }: HeaderProps) {
+  const { preference, setPreference } = useColorScheme();
+
   return (
-    <Group justify="space-between" p="md" style={{ borderBottom: "1px solid #333" }}>
+    <Group justify="space-between" p="md" style={{ borderBottom: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))" }}>
       <Group gap="md">
         <Title order={3}>FuckDeck</Title>
         <Anchor
@@ -18,9 +21,21 @@ export function Header({ onAddAccount }: HeaderProps) {
           GitHub
         </Anchor>
       </Group>
-      <Button onClick={onAddAccount} size="sm">
-        Add Account
-      </Button>
+      <Group gap="sm">
+        <SegmentedControl
+          value={preference}
+          onChange={(value) => setPreference(value as "auto" | "light" | "dark")}
+          data={[
+            { label: "🌐 Auto", value: "auto" },
+            { label: "☀️ Light", value: "light" },
+            { label: "🌙 Dark", value: "dark" },
+          ]}
+          size="xs"
+        />
+        <Button onClick={onAddAccount} size="sm">
+          Add Account
+        </Button>
+      </Group>
     </Group>
   );
 }

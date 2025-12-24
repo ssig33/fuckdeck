@@ -52,13 +52,13 @@ export function TimelineColumn({ account }: TimelineColumnProps) {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        borderRight: "1px solid #333",
+        borderRight: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))",
       }}
     >
       <Group
         p="sm"
         justify="space-between"
-        style={{ borderBottom: "1px solid #333" }}
+        style={{ borderBottom: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))" }}
       >
         <Group gap="xs">
           {account.user && (

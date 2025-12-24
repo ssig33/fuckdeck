@@ -220,7 +220,6 @@ export function ComposeForm() {
                   top={2}
                   right={2}
                   onClick={() => removeMedia(m.previewUrl)}
-                  style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
                 />
               )}
               {m.error && (

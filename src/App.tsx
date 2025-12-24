@@ -59,8 +59,7 @@ export function App() {
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#1a1a1a",
-        color: "#fff",
+        backgroundColor: "var(--mantine-color-body)",
       }}
     >
       <Header onAddAccount={openLogin} />
