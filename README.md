@@ -2,6 +2,8 @@
 
 A TweetDeck-like Mastodon client built with React + Mantine.
 
+**Live Demo:** https://ssig33.github.io/fuckdeck/
+
 ## Features
 
 - Multi-account support
