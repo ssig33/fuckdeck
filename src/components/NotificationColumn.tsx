@@ -45,7 +45,7 @@ export function NotificationColumn() {
       <Group
         p="sm"
         justify="space-between"
-        style={{ borderBottom: "1px solid #333" }}
+        style={{ borderBottom: "1px solid #333", minHeight: 62 }}
       >
         <Text size="sm" fw={600}>
           Notifications
