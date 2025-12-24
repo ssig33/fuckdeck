@@ -1,0 +1,4 @@
+- This is a React SPA (Single Page Application).
+- You can build the application using `pnpm run build`.
+  - Please build as needed to confirm the validity of your work.
+- You can run tests using `pnpm run test` (this executes `vitest`).
