@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { Account, UnifiedNotification } from "../types";
+import { Account, UnifiedNotification, ConnectionStatus } from "../types";
 import { getNotifications } from "../utils/notification";
+import { useAccounts } from "./useAccounts";
 
 const POLL_INTERVAL = 60000;
 
@@ -9,29 +10,39 @@ interface UseNotificationsResult {
   isLoading: boolean;
   errors: Map<string, string>;
   refresh: () => void;
+  connectionStatuses: Map<string, ConnectionStatus>;
 }
 
 export function useNotifications(accounts: Account[]): UseNotificationsResult {
-  const [notifications, setNotifications] = useState<UnifiedNotification[]>([]);
+  const { streamingNotifications, connectionStatuses: contextConnectionStatuses } = useAccounts();
+  const [pollingNotifications, setPollingNotifications] = useState<UnifiedNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState<Map<string, string>>(new Map());
   const latestIdsRef = useRef<Map<string, string>>(new Map());
+  const pollIntervalsRef = useRef<Map<string, number>>(new Map());
 
   const accountIds = useMemo(
     () => accounts.map((a) => a.id).join(","),
     [accounts]
   );
 
-  const sortNotifications = useCallback(
-    (items: UnifiedNotification[]): UnifiedNotification[] => {
-      return [...items].sort(
-        (a, b) =>
-          new Date(b.notification.created_at).getTime() -
-          new Date(a.notification.created_at).getTime()
-      );
-    },
-    []
-  );
+  const connectionStatuses = contextConnectionStatuses;
+
+  const notifications = useMemo(() => {
+    const notificationMap = new Map<string, UnifiedNotification>();
+
+    [...streamingNotifications, ...pollingNotifications].forEach(item => {
+      if (!notificationMap.has(item.notification.id)) {
+        notificationMap.set(item.notification.id, item);
+      }
+    });
+
+    return Array.from(notificationMap.values()).sort(
+      (a, b) =>
+        new Date(b.notification.created_at).getTime() -
+        new Date(a.notification.created_at).getTime()
+    );
+  }, [streamingNotifications, pollingNotifications]);
 
   const fetchAll = useCallback(
     async (useSinceIds: boolean) => {
@@ -79,16 +90,14 @@ export function useNotifications(accounts: Account[]): UseNotificationsResult {
       setErrors(newErrors);
 
       if (useSinceIds && newNotifications.length > 0) {
-        setNotifications((prev) =>
-          sortNotifications([...newNotifications, ...prev])
-        );
+        setPollingNotifications((prev) => [...newNotifications, ...prev]);
       } else if (!useSinceIds) {
-        setNotifications(sortNotifications(newNotifications));
+        setPollingNotifications(newNotifications);
       }
 
       setIsLoading(false);
     },
-    [accounts, sortNotifications]
+    [accounts]
   );
 
   const refresh = useCallback(() => {
@@ -99,16 +108,49 @@ export function useNotifications(accounts: Account[]): UseNotificationsResult {
 
   useEffect(() => {
     latestIdsRef.current.clear();
-    setNotifications([]);
+    setPollingNotifications([]);
     setIsLoading(true);
     fetchAll(false);
 
-    const intervalId = setInterval(() => {
-      fetchAll(true);
-    }, POLL_INTERVAL);
+    const hasStreamingAccount = accounts.some(
+      account => connectionStatuses.get(account.id) === 'streaming'
+    );
 
-    return () => clearInterval(intervalId);
-  }, [accountIds]);
+    if (!hasStreamingAccount) {
+      pollIntervalsRef.current.forEach(id => clearInterval(id));
+      pollIntervalsRef.current.clear();
 
-  return { notifications, isLoading, errors, refresh };
+      const intervalId = window.setInterval(() => {
+        fetchAll(true);
+      }, POLL_INTERVAL);
+      pollIntervalsRef.current.set('all', intervalId);
+    } else {
+      accounts.forEach((account) => {
+        const status = connectionStatuses.get(account.id);
+        if (status !== 'streaming') {
+          if (!pollIntervalsRef.current.has(account.id)) {
+            const intervalId = window.setInterval(() => {
+              fetchAll(true);
+            }, POLL_INTERVAL);
+            pollIntervalsRef.current.set(account.id, intervalId);
+          }
+        } else {
+          const intervalId = pollIntervalsRef.current.get(account.id);
+          if (intervalId !== undefined) {
+            clearInterval(intervalId);
+            pollIntervalsRef.current.delete(account.id);
+          }
+        }
+      });
+    }
+
+    return () => {
+      pollIntervalsRef.current.forEach((intervalId) => {
+        clearInterval(intervalId);
+      });
+      pollIntervalsRef.current.clear();
+    };
+  }, [accountIds, connectionStatuses, fetchAll]);
+
+  return { notifications, isLoading, errors, refresh, connectionStatuses };
 }

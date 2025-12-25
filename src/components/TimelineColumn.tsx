@@ -6,6 +6,7 @@ import {
   ActionIcon,
   Loader,
   Stack,
+  Badge,
 } from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
 import { List, useDynamicRowHeight } from "react-window";
@@ -37,12 +38,27 @@ function Row({ index, style, rowRef, statuses, instance, token }: RowProps) {
 }
 
 export function TimelineColumn({ account }: TimelineColumnProps) {
-  const { statuses, isLoading, error } = useTimeline(account);
+  const { statuses, isLoading, error, connectionStatus } = useTimeline(account);
   const { removeAccount } = useAccounts();
   const { ref, height } = useElementSize();
   const rowHeight = useDynamicRowHeight({
     defaultRowHeight: 150,
   });
+
+  const getStatusBadge = () => {
+    switch (connectionStatus) {
+      case 'streaming':
+        return <Badge size="xs" color="green" variant="dot">Live</Badge>;
+      case 'polling':
+        return <Badge size="xs" color="gray" variant="dot">Polling</Badge>;
+      case 'connecting':
+        return <Badge size="xs" color="yellow" variant="dot">Connecting...</Badge>;
+      case 'error':
+        return <Badge size="xs" color="red" variant="dot">Error</Badge>;
+      default:
+        return null;
+    }
+  };
 
   return (
     <Box
@@ -73,14 +89,17 @@ export function TimelineColumn({ account }: TimelineColumnProps) {
             </Text>
           </Stack>
         </Group>
-        <ActionIcon
-          variant="subtle"
-          color="red"
-          size="sm"
-          onClick={() => removeAccount(account.id)}
-        >
-          X
-        </ActionIcon>
+        <Group gap="xs">
+          {getStatusBadge()}
+          <ActionIcon
+            variant="subtle"
+            color="red"
+            size="sm"
+            onClick={() => removeAccount(account.id)}
+          >
+            X
+          </ActionIcon>
+        </Group>
       </Group>
 
       <Box ref={ref} style={{ flex: 1, overflow: "hidden" }}>

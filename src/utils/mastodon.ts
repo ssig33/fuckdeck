@@ -269,3 +269,23 @@ export async function unreblogStatus(
 
   return response.json();
 }
+
+export async function getInstanceInfo(
+  instance: string
+): Promise<{ streamingUrl?: string }> {
+  try {
+    const response = await fetch(`https://${instance}/api/v2/instance`);
+
+    if (!response.ok) {
+      return {};
+    }
+
+    const data = await response.json();
+    return {
+      streamingUrl: data?.configuration?.urls?.streaming,
+    };
+  } catch (error) {
+    console.warn(`Failed to get instance info for ${instance}:`, error);
+    return {};
+  }
+}

@@ -1,4 +1,4 @@
-import { Box, Group, Text, ActionIcon, Loader } from "@mantine/core";
+import { Box, Group, Text, ActionIcon, Loader, Badge } from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
 import { List, useDynamicRowHeight } from "react-window";
 import { useAccounts } from "../hooks/useAccounts";
@@ -24,12 +24,31 @@ function Row({ index, style, rowRef, notifications }: RowProps) {
 
 export function NotificationColumn() {
   const { accounts } = useAccounts();
-  const { notifications, isLoading, errors, refresh } =
+  const { notifications, isLoading, errors, refresh, connectionStatuses } =
     useNotifications(accounts);
   const { ref, height } = useElementSize();
   const rowHeight = useDynamicRowHeight({
     defaultRowHeight: 120,
   });
+
+  const getStatusSummary = () => {
+    const streaming = Array.from(connectionStatuses.values()).filter(
+      (status) => status === 'streaming'
+    ).length;
+    const polling = Array.from(connectionStatuses.values()).filter(
+      (status) => status === 'polling'
+    ).length;
+
+    if (streaming === 0 && polling === 0) {
+      return null;
+    }
+
+    const allStreaming = streaming > 0 && polling === 0;
+    const color = allStreaming ? 'green' : 'yellow';
+    const text = `${streaming} streaming / ${polling} polling`;
+
+    return <Badge size="xs" color={color} variant="dot">{text}</Badge>;
+  };
 
   return (
     <Box
@@ -50,9 +69,12 @@ export function NotificationColumn() {
         <Text size="sm" fw={600}>
           Notifications
         </Text>
-        <ActionIcon variant="subtle" size="sm" onClick={refresh}>
-          ↻
-        </ActionIcon>
+        <Group gap="xs">
+          {getStatusSummary()}
+          <ActionIcon variant="subtle" size="sm" onClick={refresh}>
+            ↻
+          </ActionIcon>
+        </Group>
       </Group>
 
       {errors.size > 0 && (

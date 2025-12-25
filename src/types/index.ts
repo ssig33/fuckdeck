@@ -65,4 +65,11 @@ export interface PostStatusOptions {
   in_reply_to_id?: string;
 }
 
+export type StreamEvent = {
+  event: 'update' | 'notification' | 'delete' | 'filters_changed';
+  payload: string;
+};
+
+export type ConnectionStatus = 'streaming' | 'polling' | 'connecting' | 'error';
+
 export * from "./notification";
