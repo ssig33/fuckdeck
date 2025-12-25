@@ -81,6 +81,15 @@ export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
     onClose();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      if (canPost) {
+        handlePost();
+      }
+    }
+  };
+
   if (!replyTo) return null;
 
   const accountOptions = accounts.map((account) => ({
@@ -114,6 +123,7 @@ export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
           placeholder="返信を入力..."
           value={content}
           onChange={(e) => setContent(e.currentTarget.value)}
+          onKeyDown={handleKeyDown}
           minRows={4}
           maxRows={8}
           autosize

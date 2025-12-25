@@ -14,6 +14,10 @@ import {
 } from "@mantine/core";
 import { useAccounts } from "../hooks/useAccounts";
 import { postStatus, uploadMedia } from "../utils/mastodon";
+import {
+  getDefaultVisibility,
+  saveDefaultVisibility,
+} from "../utils/storage";
 import { Visibility, MediaAttachment } from "../types";
 
 const MAX_LENGTH = 500;
@@ -53,7 +57,48 @@ export function ComposeForm() {
     }
   }, [accounts, selectedAccountId]);
 
+  useEffect(() => {
+    if (selectedAccountId) {
+      const saved = getDefaultVisibility(selectedAccountId);
+      if (saved) {
+        setVisibility(saved);
+      }
+    }
+  }, [selectedAccountId]);
+
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+
+  const handleVisibilityChange = (v: Visibility) => {
+    setVisibility(v);
+    if (selectedAccountId) {
+      saveDefaultVisibility(selectedAccountId, v);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      if (canPost) {
+        handlePost();
+      }
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    const imageFiles: File[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      handleFilesSelected(imageFiles);
+    }
+  };
 
   const handleFilesSelected = async (files: File[]) => {
     const remainingSlots = MAX_MEDIA - media.length;
@@ -186,6 +231,8 @@ export function ComposeForm() {
         placeholder="What's on your mind?"
         value={content}
         onChange={(e) => setContent(e.currentTarget.value)}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         minRows={4}
         maxRows={8}
         autosize
@@ -257,7 +304,7 @@ export function ComposeForm() {
         label="Visibility"
         data={VISIBILITY_OPTIONS}
         value={visibility}
-        onChange={(v) => setVisibility((v as Visibility) ?? "public")}
+        onChange={(v) => handleVisibilityChange((v as Visibility) ?? "public")}
       />
 
       {error && (

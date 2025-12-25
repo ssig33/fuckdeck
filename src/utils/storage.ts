@@ -1,6 +1,7 @@
-import { Account, PendingAuth, StoredData } from "../types";
+import { Account, PendingAuth, StoredData, Visibility } from "../types";
 
 const STORAGE_KEY = "fuckdeck_accounts";
+const VISIBILITY_KEY = "fuckdeck_visibility";
 
 const DEFAULT_DATA: StoredData = {
   accounts: [],
@@ -62,4 +63,29 @@ export function clearPendingAuth(): void {
   const data = loadStoredData();
   data.pendingAuth = null;
   saveStoredData(data);
+}
+
+export function getDefaultVisibility(accountId: string): Visibility | null {
+  try {
+    const raw = localStorage.getItem(VISIBILITY_KEY);
+    if (!raw) return null;
+    const map = JSON.parse(raw) as Record<string, Visibility>;
+    return map[accountId] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveDefaultVisibility(
+  accountId: string,
+  visibility: Visibility
+): void {
+  try {
+    const raw = localStorage.getItem(VISIBILITY_KEY);
+    const map = raw ? (JSON.parse(raw) as Record<string, Visibility>) : {};
+    map[accountId] = visibility;
+    localStorage.setItem(VISIBILITY_KEY, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
 }
