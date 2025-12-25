@@ -8,6 +8,7 @@ import {
   unreblogStatus,
 } from "../utils/mastodon";
 import { ReplyModal } from "./ReplyModal";
+import { MediaModal } from "./MediaModal";
 
 interface StatusCardProps {
   status: MastodonStatus;
@@ -27,6 +28,8 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
   const [reblogged, setReblogged] = useState(displayStatus.reblogged);
   const [replyModalOpened, setReplyModalOpened] = useState(false);
   const [replyTo, setReplyTo] = useState<MastodonStatus | null>(null);
+  const [mediaModalOpened, setMediaModalOpened] = useState(false);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   const handleFavourite = async () => {
     try {
@@ -64,6 +67,11 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
   const handleCloseReply = () => {
     setReplyModalOpened(false);
     setReplyTo(null);
+  };
+
+  const handleMediaClick = (index: number) => {
+    setSelectedMediaIndex(index);
+    setMediaModalOpened(true);
   };
 
   return (
@@ -140,7 +148,7 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
           />
           {displayStatus.media_attachments.length > 0 && (
             <Group gap="xs" mt="xs">
-              {displayStatus.media_attachments.map((media) => (
+              {displayStatus.media_attachments.map((media, index) => (
                 <Image
                   key={media.id}
                   src={media.preview_url}
@@ -149,6 +157,8 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
                   h={100}
                   fit="cover"
                   radius="sm"
+                  onClick={() => handleMediaClick(index)}
+                  style={{ cursor: "pointer" }}
                 />
               ))}
             </Group>
@@ -159,6 +169,12 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
         opened={replyModalOpened}
         onClose={handleCloseReply}
         replyTo={replyTo}
+      />
+      <MediaModal
+        opened={mediaModalOpened}
+        onClose={() => setMediaModalOpened(false)}
+        media={displayStatus.media_attachments}
+        initialIndex={selectedMediaIndex}
       />
     </Card>
   );
