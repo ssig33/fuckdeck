@@ -2,3 +2,4 @@
 - You can build the application using `pnpm run build`.
   - Please build as needed to confirm the validity of your work.
 - You can run tests using `pnpm run test` (this executes `vitest`).
+  - When planning, include tests within a reasonable scope (e.g., normal cases only, skip tests for complex mocking like clipboard/paste operations).

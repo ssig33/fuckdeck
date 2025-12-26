@@ -16,6 +16,14 @@ export interface MediaAttachment {
   description: string | null;
 }
 
+export interface UploadedMedia {
+  file: File;
+  previewUrl: string;
+  attachment?: MediaAttachment;
+  uploading: boolean;
+  error?: string;
+}
+
 export interface MastodonStatus {
   id: string;
   created_at: string;

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Stack,
   Textarea,
@@ -7,18 +7,17 @@ import {
   Select,
   Text,
   Group,
-  Image,
-  CloseButton,
-  Box,
   FileButton,
 } from "@mantine/core";
 import { useAccounts } from "../hooks/useAccounts";
-import { postStatus, uploadMedia } from "../utils/mastodon";
+import { useMediaUpload } from "../hooks/useMediaUpload";
+import { postStatus } from "../utils/mastodon";
 import {
   getDefaultVisibility,
   saveDefaultVisibility,
 } from "../utils/storage";
-import { Visibility, MediaAttachment } from "../types";
+import { Visibility } from "../types";
+import { MediaPreview } from "./MediaPreview";
 
 const MAX_LENGTH = 500;
 const MAX_MEDIA = 4;
@@ -30,14 +29,6 @@ const VISIBILITY_OPTIONS = [
   { value: "direct", label: "Direct" },
 ];
 
-interface UploadedMedia {
-  file: File;
-  previewUrl: string;
-  attachment?: MediaAttachment;
-  uploading: boolean;
-  error?: string;
-}
-
 export function ComposeForm() {
   const { accounts } = useAccounts();
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(
@@ -48,8 +39,24 @@ export function ComposeForm() {
   const [spoilerText, setSpoilerText] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [media, setMedia] = useState<UploadedMedia[]>([]);
-  const resetRef = useRef<() => void>(null);
+
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+
+  const {
+    media,
+    isUploading,
+    hasError,
+    canAddMore,
+    addFiles,
+    removeMedia,
+    clearAll,
+    getMediaIds,
+    resetRef,
+  } = useMediaUpload({
+    instance: selectedAccount?.instance ?? "",
+    accessToken: selectedAccount?.accessToken ?? "",
+    maxMedia: MAX_MEDIA,
+  });
 
   useEffect(() => {
     if (accounts.length > 0 && !selectedAccountId) {
@@ -65,8 +72,6 @@ export function ComposeForm() {
       }
     }
   }, [selectedAccountId]);
-
-  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
 
   const handleVisibilityChange = (v: Visibility) => {
     setVisibility(v);
@@ -96,78 +101,19 @@ export function ComposeForm() {
     }
 
     if (imageFiles.length > 0) {
-      handleFilesSelected(imageFiles);
+      addFiles(imageFiles);
     }
-  };
-
-  const handleFilesSelected = async (files: File[]) => {
-    const remainingSlots = MAX_MEDIA - media.length;
-    const filesToAdd = files.slice(0, remainingSlots);
-
-    if (filesToAdd.length === 0 || !selectedAccount) return;
-
-    const newMedia: UploadedMedia[] = filesToAdd.map((file) => ({
-      file,
-      previewUrl: URL.createObjectURL(file),
-      uploading: true,
-    }));
-
-    setMedia((prev) => [...prev, ...newMedia]);
-
-    for (let i = 0; i < newMedia.length; i++) {
-      const mediaItem = newMedia[i];
-      try {
-        const attachment = await uploadMedia(
-          selectedAccount.instance,
-          selectedAccount.accessToken,
-          mediaItem.file
-        );
-        setMedia((prev) =>
-          prev.map((m) =>
-            m.previewUrl === mediaItem.previewUrl
-              ? { ...m, attachment, uploading: false }
-              : m
-          )
-        );
-      } catch (err) {
-        setMedia((prev) =>
-          prev.map((m) =>
-            m.previewUrl === mediaItem.previewUrl
-              ? {
-                  ...m,
-                  uploading: false,
-                  error: err instanceof Error ? err.message : "Upload failed",
-                }
-              : m
-          )
-        );
-      }
-    }
-
-    resetRef.current?.();
-  };
-
-  const removeMedia = (previewUrl: string) => {
-    setMedia((prev) => {
-      const item = prev.find((m) => m.previewUrl === previewUrl);
-      if (item) {
-        URL.revokeObjectURL(item.previewUrl);
-      }
-      return prev.filter((m) => m.previewUrl !== previewUrl);
-    });
   };
 
   const handlePost = async () => {
     if (!selectedAccount || !content.trim()) return;
 
-    const uploadingMedia = media.filter((m) => m.uploading);
-    if (uploadingMedia.length > 0) {
+    if (isUploading) {
       setError("Please wait for media uploads to complete");
       return;
     }
 
-    const failedMedia = media.filter((m) => m.error);
-    if (failedMedia.length > 0) {
+    if (hasError) {
       setError("Some media failed to upload. Remove them and try again.");
       return;
     }
@@ -176,9 +122,7 @@ export function ComposeForm() {
     setError(null);
 
     try {
-      const mediaIds = media
-        .filter((m) => m.attachment)
-        .map((m) => m.attachment!.id);
+      const mediaIds = getMediaIds();
 
       await postStatus(selectedAccount.instance, selectedAccount.accessToken, {
         status: content,
@@ -189,8 +133,7 @@ export function ComposeForm() {
 
       setContent("");
       setSpoilerText("");
-      media.forEach((m) => URL.revokeObjectURL(m.previewUrl));
-      setMedia([]);
+      clearAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to post");
     } finally {
@@ -207,7 +150,7 @@ export function ComposeForm() {
     selectedAccount &&
     content.trim() &&
     content.length <= MAX_LENGTH &&
-    !media.some((m) => m.uploading);
+    !isUploading;
 
   return (
     <Stack gap="sm">
@@ -244,55 +187,22 @@ export function ComposeForm() {
         </Text>
       </Group>
 
-      {media.length > 0 && (
-        <Group gap="xs">
-          {media.map((m) => (
-            <Box
-              key={m.previewUrl}
-              pos="relative"
-              style={{ width: 60, height: 60 }}
-            >
-              <Image
-                src={m.previewUrl}
-                w={60}
-                h={60}
-                fit="cover"
-                radius="sm"
-                style={{ opacity: m.uploading ? 0.5 : 1 }}
-              />
-              {!m.uploading && (
-                <CloseButton
-                  size="xs"
-                  pos="absolute"
-                  top={2}
-                  right={2}
-                  onClick={() => removeMedia(m.previewUrl)}
-                />
-              )}
-              {m.error && (
-                <Text size="xs" c="red" pos="absolute" bottom={0}>
-                  Error
-                </Text>
-              )}
-            </Box>
-          ))}
-        </Group>
-      )}
+      <MediaPreview media={media} onRemove={removeMedia} />
 
       <Group>
         <FileButton
-          onChange={(files) => files && handleFilesSelected(files)}
+          onChange={(files) => files && addFiles(files)}
           accept="image/*"
           multiple
           resetRef={resetRef}
-          disabled={media.length >= MAX_MEDIA || !selectedAccount}
+          disabled={!canAddMore || !selectedAccount}
         >
           {(props) => (
             <Button
               variant="light"
               size="xs"
               {...props}
-              disabled={media.length >= MAX_MEDIA || !selectedAccount}
+              disabled={!canAddMore || !selectedAccount}
             >
               Add image ({media.length}/{MAX_MEDIA})
             </Button>
