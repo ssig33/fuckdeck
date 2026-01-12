@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, Group, Avatar, Text, Stack, Image, Box, Anchor, ActionIcon } from "@mantine/core";
 import { MastodonStatus } from "../types";
 import {
@@ -7,8 +7,10 @@ import {
   reblogStatus,
   unreblogStatus,
 } from "../utils/mastodon";
+import { extractGyazoIds } from "../utils/gyazo";
 import { ReplyModal } from "./ReplyModal";
 import { MediaModal } from "./MediaModal";
+import { GyazoImage } from "./GyazoImage";
 
 interface StatusCardProps {
   status: MastodonStatus;
@@ -73,6 +75,11 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
     setSelectedMediaIndex(index);
     setMediaModalOpened(true);
   };
+
+  const gyazoIds = useMemo(
+    () => extractGyazoIds(displayStatus.content),
+    [displayStatus.content]
+  );
 
   return (
     <Card p="sm" style={{ borderBottom: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))" }} radius={0}>
@@ -160,6 +167,13 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
                   onClick={() => handleMediaClick(index)}
                   style={{ cursor: "pointer" }}
                 />
+              ))}
+            </Group>
+          )}
+          {gyazoIds.length > 0 && (
+            <Group gap="xs" mt="xs">
+              {gyazoIds.map((id) => (
+                <GyazoImage key={id} gyazoId={id} />
               ))}
             </Group>
           )}
