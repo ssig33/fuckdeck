@@ -14,8 +14,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.33.0",
   "dependencies": {
-    "@mantine/core": "^8.3.10",
-    "@mantine/hooks": "^8.3.10",
+    "@mantine/core": "^9.0.0",
+    "@mantine/hooks": "^9.0.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "esbuild": "^0.28.0",
