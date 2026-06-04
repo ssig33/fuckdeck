@@ -138,5 +138,22 @@ describe("mastodon", () => {
         expect.any(Object)
       );
     });
+
+    it("fetches timeline with maxId option", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      });
+
+      await getHomeTimeline("mastodon.social", "access-token", {
+        maxId: "67890",
+        limit: 40,
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://mastodon.social/api/v1/timelines/home?max_id=67890&limit=40",
+        expect.any(Object)
+      );
+    });
   });
 });

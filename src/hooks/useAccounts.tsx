@@ -25,6 +25,9 @@ interface AccountContextValue {
 
 const AccountContext = createContext<AccountContextValue | null>(null);
 
+const MAX_STREAMING_STATUSES = 200;
+const MAX_STREAMING_NOTIFICATIONS = 200;
+
 interface AccountProviderProps {
   children: ReactNode;
 }
@@ -103,7 +106,7 @@ export function AccountProvider({ children }: AccountProviderProps) {
             setStreamingStatuses((prev) => {
               const next = new Map(prev);
               const current = next.get(account.id) || [];
-              next.set(account.id, [newStatus, ...current]);
+              next.set(account.id, [newStatus, ...current].slice(0, MAX_STREAMING_STATUSES));
               return next;
             });
           }
@@ -115,11 +118,15 @@ export function AccountProvider({ children }: AccountProviderProps) {
               notification,
               targetAccount: account,
             };
-            setStreamingNotifications((prev) => [unified, ...prev].sort(
-              (a, b) =>
-                new Date(b.notification.created_at).getTime() -
-                new Date(a.notification.created_at).getTime()
-            ));
+            setStreamingNotifications((prev) =>
+              [unified, ...prev]
+                .sort(
+                  (a, b) =>
+                    new Date(b.notification.created_at).getTime() -
+                    new Date(a.notification.created_at).getTime()
+                )
+                .slice(0, MAX_STREAMING_NOTIFICATIONS)
+            );
           }
         } else if (event.event === 'delete') {
           const deletedId = event.payload;

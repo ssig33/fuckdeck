@@ -105,6 +105,7 @@ export async function verifyCredentials(
 
 export interface GetTimelineOptions {
   sinceId?: string;
+  maxId?: string;
   limit?: number;
 }
 
@@ -116,6 +117,9 @@ export async function getHomeTimeline(
   const url = new URL(`https://${instance}/api/v1/timelines/home`);
   if (options.sinceId) {
     url.searchParams.set("since_id", options.sinceId);
+  }
+  if (options.maxId) {
+    url.searchParams.set("max_id", options.maxId);
   }
   if (options.limit) {
     url.searchParams.set("limit", String(options.limit));

@@ -9,11 +9,14 @@ import {
   Badge,
 } from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
+import { useCallback } from "react";
 import { List, useDynamicRowHeight } from "react-window";
 import { Account, MastodonStatus } from "../types";
 import { useTimeline } from "../hooks/useTimeline";
 import { StatusCard } from "./StatusCard";
 import { useAccounts } from "../hooks/useAccounts";
+
+const LOAD_OLDER_THRESHOLD = 5;
 
 interface TimelineColumnProps {
   account: Account;
@@ -38,12 +41,22 @@ function Row({ index, style, rowRef, statuses, instance, token }: RowProps) {
 }
 
 export function TimelineColumn({ account }: TimelineColumnProps) {
-  const { statuses, isLoading, error, connectionStatus } = useTimeline(account);
+  const { statuses, isLoading, isLoadingOlder, error, connectionStatus, loadOlder } =
+    useTimeline(account);
   const { removeAccount } = useAccounts();
   const { ref, height } = useElementSize();
   const rowHeight = useDynamicRowHeight({
     defaultRowHeight: 150,
   });
+
+  const handleRowsRendered = useCallback(
+    (visibleRows: { startIndex: number; stopIndex: number }) => {
+      if (visibleRows.stopIndex >= statuses.length - LOAD_OLDER_THRESHOLD) {
+        loadOlder();
+      }
+    },
+    [statuses.length, loadOlder]
+  );
 
   const getStatusBadge = () => {
     switch (connectionStatus) {
@@ -121,11 +134,18 @@ export function TimelineColumn({ account }: TimelineColumnProps) {
             rowHeight={rowHeight}
             rowComponent={Row}
             rowProps={{ statuses, instance: account.instance, token: account.accessToken }}
+            onRowsRendered={handleRowsRendered}
             height={height}
             width={350}
           />
         )}
       </Box>
+
+      {isLoadingOlder && (
+        <Box p="xs" style={{ textAlign: "center" }}>
+          <Loader size="xs" />
+        </Box>
+      )}
     </Box>
   );
 }
