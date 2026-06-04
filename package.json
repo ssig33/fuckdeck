@@ -12,13 +12,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.26.2",
+  "packageManager": "pnpm@10.34.1",
   "dependencies": {
-    "@mantine/core": "^8.3.10",
-    "@mantine/hooks": "^8.3.10",
+    "@mantine/core": "^9.0.0",
+    "@mantine/hooks": "^9.0.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "esbuild": "^0.27.2",
+    "esbuild": "^0.28.0",
     "esbuild-server": "^0.3.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
@@ -28,7 +28,7 @@
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.1",
-    "jsdom": "^27.3.0",
+    "jsdom": "^28.0.0",
     "vitest": "^4.0.16"
   }
 }
