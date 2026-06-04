@@ -9,7 +9,7 @@ import {
   Badge,
 } from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { List, useDynamicRowHeight } from "react-window";
 import { Account, MastodonStatus } from "../types";
 import { useTimeline } from "../hooks/useTimeline";
@@ -41,10 +41,11 @@ function Row({ index, style, rowRef, statuses, instance, token }: RowProps) {
 }
 
 export function TimelineColumn({ account }: TimelineColumnProps) {
-  const { statuses, isLoading, isLoadingOlder, error, connectionStatus, loadOlder } =
+  const { statuses, isLoading, isLoadingOlder, error, connectionStatus, loadOlder, trimOlder } =
     useTimeline(account);
   const { removeAccount } = useAccounts();
   const { ref, height } = useElementSize();
+  const scrolledAwayRef = useRef(false);
   const rowHeight = useDynamicRowHeight({
     defaultRowHeight: 150,
   });
@@ -54,8 +55,15 @@ export function TimelineColumn({ account }: TimelineColumnProps) {
       if (visibleRows.stopIndex >= statuses.length - LOAD_OLDER_THRESHOLD) {
         loadOlder();
       }
+
+      if (visibleRows.startIndex > 0) {
+        scrolledAwayRef.current = true;
+      } else if (scrolledAwayRef.current) {
+        scrolledAwayRef.current = false;
+        trimOlder();
+      }
     },
-    [statuses.length, loadOlder]
+    [statuses.length, loadOlder, trimOlder]
   );
 
   const getStatusBadge = () => {

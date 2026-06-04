@@ -15,6 +15,7 @@ interface UseTimelineResult {
   error: string | null;
   refresh: () => void;
   loadOlder: () => void;
+  trimOlder: () => void;
   connectionStatus: ConnectionStatus;
 }
 
@@ -111,6 +112,11 @@ export function useTimeline(account: Account): UseTimelineResult {
     }
   }, [account.instance, account.accessToken, hasMore]);
 
+  const trimOlder = useCallback(() => {
+    setOlderStatuses((prev) => (prev.length > 0 ? [] : prev));
+    setHasMore(true);
+  }, []);
+
   const refresh = useCallback(() => {
     setIsLoading(true);
     fetchTimeline();
@@ -150,6 +156,7 @@ export function useTimeline(account: Account): UseTimelineResult {
     error,
     refresh,
     loadOlder,
+    trimOlder,
     connectionStatus,
   };
 }
