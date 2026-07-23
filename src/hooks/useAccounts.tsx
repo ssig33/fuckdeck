@@ -21,6 +21,7 @@ interface AccountContextValue {
   streamingStatuses: Map<string, MastodonStatus[]>;
   streamingNotifications: UnifiedNotification[];
   connectionStatuses: Map<string, ConnectionStatus>;
+  forceReconnect: (accountId: string) => void;
 }
 
 const AccountContext = createContext<AccountContextValue | null>(null);
@@ -65,6 +66,13 @@ export function AccountProvider({ children }: AccountProviderProps) {
     );
     setAccounts(newAccounts);
     saveAccounts(newAccounts);
+  };
+
+  const forceReconnect = (accountId: string) => {
+    const client = streamClientsRef.current.get(accountId);
+    if (client) {
+      client.forceReconnect();
+    }
   };
 
   const setPendingAuth = (auth: PendingAuth | null) => {
@@ -187,6 +195,7 @@ export function AccountProvider({ children }: AccountProviderProps) {
         streamingStatuses,
         streamingNotifications,
         connectionStatuses,
+        forceReconnect,
       }}
     >
       {children}
