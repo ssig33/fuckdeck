@@ -99,6 +99,32 @@ export class MastodonStreamClient {
     this.reconnectAttempts = 0;
   }
 
+  forceReconnect(): void {
+    console.log(`[Streaming] Force reconnect requested for ${this.instance}`);
+
+    if (this.reconnectTimeout !== null) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    if (this.ws) {
+      // Detach handlers so closing the old socket does not trigger
+      // the automatic reconnect logic on top of this manual attempt.
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onerror = null;
+      this.ws.onclose = null;
+      this.ws.close();
+      this.ws = null;
+    }
+
+    this.reconnectAttempts = 0;
+
+    this.connect().catch((error) => {
+      console.error(`[Streaming] Force reconnect failed for ${this.instance}:`, error);
+    });
+  }
+
   on(event: 'event', callback: EventCallback): void;
   on(event: 'statusChange', callback: StatusChangeCallback): void;
   on(event: string, callback: EventCallback | StatusChangeCallback): void {

@@ -43,7 +43,7 @@ function Row({ index, style, rowRef, statuses, instance, token }: RowProps) {
 export function TimelineColumn({ account }: TimelineColumnProps) {
   const { statuses, isLoading, isLoadingOlder, error, connectionStatus, loadOlder, trimOlder } =
     useTimeline(account);
-  const { removeAccount } = useAccounts();
+  const { removeAccount, forceReconnect } = useAccounts();
   const { ref, height } = useElementSize();
   const scrolledAwayRef = useRef(false);
   const rowHeight = useDynamicRowHeight({
@@ -112,6 +112,15 @@ export function TimelineColumn({ account }: TimelineColumnProps) {
         </Group>
         <Group gap="xs">
           {getStatusBadge()}
+          <ActionIcon
+            variant="subtle"
+            size="sm"
+            title="Force reconnect"
+            aria-label="Force reconnect"
+            onClick={() => forceReconnect(account.id)}
+          >
+            ↻
+          </ActionIcon>
           <ActionIcon
             variant="subtle"
             color="red"
