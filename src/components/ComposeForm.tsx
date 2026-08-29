@@ -10,6 +10,7 @@ import {
   FileButton,
 } from "@mantine/core";
 import { useAccounts } from "../hooks/useAccounts";
+import { useInstanceLimits } from "../hooks/useInstanceLimits";
 import { useMediaUpload } from "../hooks/useMediaUpload";
 import { postStatus } from "../utils/mastodon";
 import {
@@ -18,9 +19,6 @@ import {
 } from "../utils/storage";
 import { Visibility } from "../types";
 import { MediaPreview } from "./MediaPreview";
-
-const MAX_LENGTH = 500;
-const MAX_MEDIA = 4;
 
 const VISIBILITY_OPTIONS = [
   { value: "public", label: "Public" },
@@ -41,6 +39,7 @@ export function ComposeForm() {
   const [error, setError] = useState<string | null>(null);
 
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const limits = useInstanceLimits(selectedAccount);
 
   const {
     media,
@@ -55,7 +54,7 @@ export function ComposeForm() {
   } = useMediaUpload({
     instance: selectedAccount?.instance ?? "",
     accessToken: selectedAccount?.accessToken ?? "",
-    maxMedia: MAX_MEDIA,
+    maxMedia: limits.maxMediaAttachments,
   });
 
   useEffect(() => {
@@ -149,7 +148,7 @@ export function ComposeForm() {
   const canPost =
     selectedAccount &&
     content.trim() &&
-    content.length <= MAX_LENGTH &&
+    content.length <= limits.maxCharacters &&
     !isUploading;
 
   return (
@@ -182,8 +181,11 @@ export function ComposeForm() {
       />
 
       <Group justify="space-between">
-        <Text size="xs" c={content.length > MAX_LENGTH ? "red" : "dimmed"}>
-          {content.length}/{MAX_LENGTH}
+        <Text
+          size="xs"
+          c={content.length > limits.maxCharacters ? "red" : "dimmed"}
+        >
+          {content.length}/{limits.maxCharacters}
         </Text>
       </Group>
 
@@ -204,7 +206,7 @@ export function ComposeForm() {
               {...props}
               disabled={!canAddMore || !selectedAccount}
             >
-              Add image ({media.length}/{MAX_MEDIA})
+              Add image ({media.length}/{limits.maxMediaAttachments})
             </Button>
           )}
         </FileButton>

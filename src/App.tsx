@@ -6,7 +6,11 @@ import { Header } from "./components/Header";
 import { LoginModal } from "./components/LoginModal";
 import { ColumnLayout } from "./components/ColumnLayout";
 import { Sidebar } from "./components/Sidebar";
-import { exchangeToken, verifyCredentials } from "./utils/mastodon";
+import {
+  exchangeToken,
+  getInstanceLimits,
+  verifyCredentials,
+} from "./utils/mastodon";
 
 export function App() {
   const [loginOpened, { open: openLogin, close: closeLogin }] = useDisclosure(false);
@@ -32,6 +36,7 @@ export function App() {
           );
 
           const user = await verifyCredentials(pendingAuth.instance, token);
+          const limits = await getInstanceLimits(pendingAuth.instance);
 
           addAccount({
             id: crypto.randomUUID(),
@@ -40,6 +45,7 @@ export function App() {
             clientId: pendingAuth.clientId,
             clientSecret: pendingAuth.clientSecret,
             user,
+            limits,
           });
 
           setPendingAuth(null);

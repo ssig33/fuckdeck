@@ -3,6 +3,7 @@ import {
   MastodonStatus,
   MediaAttachment,
   PostStatusOptions,
+  InstanceLimits,
 } from "../types";
 
 const APP_NAME = "FuckDeck";
@@ -292,4 +293,60 @@ export async function getInstanceInfo(
     console.warn(`Failed to get instance info for ${instance}:`, error);
     return {};
   }
+}
+
+export const DEFAULT_INSTANCE_LIMITS: InstanceLimits = {
+  maxCharacters: 500,
+  maxMediaAttachments: 4,
+};
+
+function parseInstanceLimits(data: any): Partial<InstanceLimits> {
+  const statuses = data?.configuration?.statuses;
+  const maxCharacters = statuses?.max_characters ?? data?.max_toot_chars;
+  const maxMediaAttachments =
+    statuses?.max_media_attachments ?? data?.max_media_attachments;
+
+  return {
+    maxCharacters:
+      typeof maxCharacters === "number" ? maxCharacters : undefined,
+    maxMediaAttachments:
+      typeof maxMediaAttachments === "number" ? maxMediaAttachments : undefined,
+  };
+}
+
+async function fetchInstanceLimits(url: string): Promise<Partial<InstanceLimits>> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return {};
+    }
+    return parseInstanceLimits(await response.json());
+  } catch (error) {
+    console.warn(`Failed to get instance limits from ${url}:`, error);
+    return {};
+  }
+}
+
+export async function getInstanceLimits(
+  instance: string
+): Promise<InstanceLimits> {
+  const v2 = await fetchInstanceLimits(`https://${instance}/api/v2/instance`);
+
+  if (
+    v2.maxCharacters !== undefined &&
+    v2.maxMediaAttachments !== undefined
+  ) {
+    return v2 as InstanceLimits;
+  }
+
+  const v1 = await fetchInstanceLimits(`https://${instance}/api/v1/instance`);
+
+  return {
+    maxCharacters:
+      v2.maxCharacters ?? v1.maxCharacters ?? DEFAULT_INSTANCE_LIMITS.maxCharacters,
+    maxMediaAttachments:
+      v2.maxMediaAttachments ??
+      v1.maxMediaAttachments ??
+      DEFAULT_INSTANCE_LIMITS.maxMediaAttachments,
+  };
 }

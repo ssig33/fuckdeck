@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { Modal, Stack, Textarea, Button, Select, Text } from "@mantine/core";
 import { useAccounts } from "../hooks/useAccounts";
+import { useInstanceLimits } from "../hooks/useInstanceLimits";
 import { postStatus } from "../utils/mastodon";
 import { MastodonStatus, Visibility } from "../types";
-
-const MAX_LENGTH = 500;
 
 const VISIBILITY_OPTIONS = [
   { value: "public", label: "Public" },
@@ -26,6 +25,9 @@ export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [isPosting, setIsPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const limits = useInstanceLimits(selectedAccount);
 
   // アカウント自動選択（返信先と同じインスタンス優先）
   useEffect(() => {
@@ -51,10 +53,7 @@ export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
   }, [replyTo]);
 
   const handlePost = async () => {
-    if (!selectedAccountId || !content.trim() || !replyTo) return;
-
-    const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
-    if (!selectedAccount) return;
+    if (!selectedAccount || !content.trim() || !replyTo) return;
 
     setIsPosting(true);
     setError(null);
@@ -100,7 +99,7 @@ export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
   const canPost =
     selectedAccountId &&
     content.trim() &&
-    content.length <= MAX_LENGTH;
+    content.length <= limits.maxCharacters;
 
   return (
     <Modal
@@ -129,8 +128,11 @@ export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
           autosize
         />
 
-        <Text size="xs" c={content.length > MAX_LENGTH ? "red" : "dimmed"}>
-          {content.length}/{MAX_LENGTH}
+        <Text
+          size="xs"
+          c={content.length > limits.maxCharacters ? "red" : "dimmed"}
+        >
+          {content.length}/{limits.maxCharacters}
         </Text>
 
         <Select

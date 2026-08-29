@@ -42,6 +42,11 @@ export interface MastodonStatus {
   visibility: Visibility;
 }
 
+export interface InstanceLimits {
+  maxCharacters: number;
+  maxMediaAttachments: number;
+}
+
 export interface Account {
   id: string;
   instance: string;
@@ -49,6 +54,7 @@ export interface Account {
   clientId: string;
   clientSecret: string;
   user: MastodonUser | null;
+  limits?: InstanceLimits;
 }
 
 export interface PendingAuth {

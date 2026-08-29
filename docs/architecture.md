@@ -11,8 +11,9 @@ src/
 ├── types/
 │   └── index.ts        # Type definitions
 ├── hooks/
-│   ├── useAccounts.tsx # Account management
-│   └── useTimeline.ts  # Timeline fetching
+│   ├── useAccounts.tsx      # Account management
+│   ├── useInstanceLimits.ts # Instance posting limits
+│   └── useTimeline.ts       # Timeline fetching
 ├── components/
 │   ├── Header.tsx
 │   ├── LoginModal.tsx
@@ -122,13 +123,23 @@ interface StoredData {
 
 - Select account from dropdown
 - Content Warning (CW) input
-- Text content with character counter (500 chars)
-- Image attachments (up to 4)
+- Text content with character counter (limit fetched from the instance)
+- Image attachments (limit fetched from the instance)
 - Visibility selection (public/unlisted/private/direct)
 
 API functions:
 - `uploadMedia`: `POST /api/v2/media`
 - `postStatus`: `POST /api/v1/statuses`
+
+## Instance Limits
+
+`getInstanceLimits` resolves the posting limits of an instance: it reads
+`configuration.statuses` from `GET /api/v2/instance`, falls back to
+`GET /api/v1/instance`, and finally to 500 characters / 4 attachments.
+
+The limits are stored on the `Account` in localStorage, so they are fetched
+once per account. `useInstanceLimits` reads that cache and fills it in on
+demand for accounts added before the limits were persisted.
 
 ## Components
 
