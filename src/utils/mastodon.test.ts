@@ -4,6 +4,7 @@ import {
   getAuthorizationUrl,
   verifyCredentials,
   getHomeTimeline,
+  getInstanceLimits,
 } from "./mastodon";
 
 const mockFetch = vi.fn();
@@ -154,6 +155,51 @@ describe("mastodon", () => {
         "https://mastodon.social/api/v1/timelines/home?max_id=67890&limit=40",
         expect.any(Object)
       );
+    });
+  });
+
+  describe("getInstanceLimits", () => {
+    it("reads limits from the v2 instance endpoint", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          configuration: {
+            statuses: { max_characters: 10000, max_media_attachments: 8 },
+          },
+        }),
+      });
+
+      const result = await getInstanceLimits("fedibird.com");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://fedibird.com/api/v2/instance"
+      );
+      expect(result).toEqual({ maxCharacters: 10000, maxMediaAttachments: 8 });
+    });
+
+    it("falls back to the v1 instance endpoint", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ max_toot_chars: 5000, max_media_attachments: 6 }),
+      });
+
+      const result = await getInstanceLimits("example.social");
+
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        "https://example.social/api/v1/instance"
+      );
+      expect(result).toEqual({ maxCharacters: 5000, maxMediaAttachments: 6 });
+    });
+
+    it("returns defaults when both endpoints fail", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("network error"));
+      mockFetch.mockRejectedValueOnce(new Error("network error"));
+
+      const result = await getInstanceLimits("broken.example");
+
+      expect(result).toEqual({ maxCharacters: 500, maxMediaAttachments: 4 });
     });
   });
 });
