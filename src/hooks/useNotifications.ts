@@ -4,6 +4,18 @@ import { getNotifications } from "../utils/notification";
 import { useAccounts } from "./useAccounts";
 
 const POLL_INTERVAL = 60000;
+const MAX_POLLING_NOTIFICATIONS = 200;
+
+function byNewest(a: UnifiedNotification, b: UnifiedNotification): number {
+  return (
+    new Date(b.notification.created_at).getTime() -
+    new Date(a.notification.created_at).getTime()
+  );
+}
+
+function joinAccountIds(accounts: Account[]): string {
+  return accounts.map((a) => a.id).join(",");
+}
 
 interface UseNotificationsResult {
   notifications: UnifiedNotification[];
@@ -14,45 +26,43 @@ interface UseNotificationsResult {
 }
 
 export function useNotifications(accounts: Account[]): UseNotificationsResult {
-  const { streamingNotifications, connectionStatuses: contextConnectionStatuses } = useAccounts();
+  const { streamingNotifications, connectionStatuses } = useAccounts();
   const [pollingNotifications, setPollingNotifications] = useState<UnifiedNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState<Map<string, string>>(new Map());
   const latestIdsRef = useRef<Map<string, string>>(new Map());
-  const pollIntervalsRef = useRef<Map<string, number>>(new Map());
+  const streamingAccountIdsRef = useRef<Set<string>>(new Set());
 
-  const accountIds = useMemo(
-    () => accounts.map((a) => a.id).join(","),
-    [accounts]
+  const streamingAccountIds = joinAccountIds(
+    accounts.filter((a) => connectionStatuses.get(a.id) === "streaming")
   );
-
-  const connectionStatuses = contextConnectionStatuses;
+  const pollingAccountIds = joinAccountIds(
+    accounts.filter((a) => connectionStatuses.get(a.id) !== "streaming")
+  );
 
   const notifications = useMemo(() => {
     const notificationMap = new Map<string, UnifiedNotification>();
 
     [...streamingNotifications, ...pollingNotifications].forEach(item => {
-      if (!notificationMap.has(item.notification.id)) {
-        notificationMap.set(item.notification.id, item);
+      // Notification ids are only unique within an instance.
+      const key = `${item.targetAccount.id}:${item.notification.id}`;
+      if (!notificationMap.has(key)) {
+        notificationMap.set(key, item);
       }
     });
 
-    return Array.from(notificationMap.values()).sort(
-      (a, b) =>
-        new Date(b.notification.created_at).getTime() -
-        new Date(a.notification.created_at).getTime()
-    );
+    return Array.from(notificationMap.values()).sort(byNewest);
   }, [streamingNotifications, pollingNotifications]);
 
-  const fetchAll = useCallback(
-    async (useSinceIds: boolean) => {
-      if (accounts.length === 0) {
+  const fetchNotifications = useCallback(
+    async (targets: Account[], useSinceIds: boolean) => {
+      if (targets.length === 0) {
         setIsLoading(false);
         return;
       }
 
       const results = await Promise.allSettled(
-        accounts.map(async (account) => {
+        targets.map(async (account) => {
           const sinceId = useSinceIds
             ? latestIdsRef.current.get(account.id)
             : undefined;
@@ -73,84 +83,87 @@ export function useNotifications(accounts: Account[]): UseNotificationsResult {
         })
       );
 
-      const newErrors = new Map<string, string>();
       const newNotifications: UnifiedNotification[] = [];
 
-      results.forEach((result, index) => {
+      setErrors((prev) => {
+        const next = new Map(useSinceIds ? prev : []);
+        results.forEach((result, index) => {
+          if (result.status === "rejected") {
+            next.set(
+              targets[index].id,
+              result.reason?.message ?? "Unknown error"
+            );
+          } else {
+            next.delete(targets[index].id);
+          }
+        });
+        return next;
+      });
+
+      results.forEach((result) => {
         if (result.status === "fulfilled") {
           newNotifications.push(...result.value);
-        } else {
-          newErrors.set(
-            accounts[index].id,
-            result.reason?.message ?? "Unknown error"
-          );
         }
       });
 
-      setErrors(newErrors);
-
       if (useSinceIds && newNotifications.length > 0) {
-        setPollingNotifications((prev) => [...newNotifications, ...prev]);
+        setPollingNotifications((prev) =>
+          [...newNotifications, ...prev]
+            .sort(byNewest)
+            .slice(0, MAX_POLLING_NOTIFICATIONS)
+        );
       } else if (!useSinceIds) {
         setPollingNotifications(newNotifications);
       }
 
       setIsLoading(false);
     },
-    [accounts]
+    []
   );
 
   const refresh = useCallback(() => {
     setIsLoading(true);
     latestIdsRef.current.clear();
-    fetchAll(false);
-  }, [fetchAll]);
+    fetchNotifications(accounts, false);
+  }, [accounts, fetchNotifications]);
 
   useEffect(() => {
     latestIdsRef.current.clear();
     setPollingNotifications([]);
     setIsLoading(true);
-    fetchAll(false);
+    fetchNotifications(accounts, false);
+  }, [accounts, fetchNotifications]);
 
-    const hasStreamingAccount = accounts.some(
-      account => connectionStatuses.get(account.id) === 'streaming'
+  useEffect(() => {
+    const targets = accounts.filter((a) =>
+      pollingAccountIds.split(",").includes(a.id)
     );
-
-    if (!hasStreamingAccount) {
-      pollIntervalsRef.current.forEach(id => clearInterval(id));
-      pollIntervalsRef.current.clear();
-
-      const intervalId = window.setInterval(() => {
-        fetchAll(true);
-      }, POLL_INTERVAL);
-      pollIntervalsRef.current.set('all', intervalId);
-    } else {
-      accounts.forEach((account) => {
-        const status = connectionStatuses.get(account.id);
-        if (status !== 'streaming') {
-          if (!pollIntervalsRef.current.has(account.id)) {
-            const intervalId = window.setInterval(() => {
-              fetchAll(true);
-            }, POLL_INTERVAL);
-            pollIntervalsRef.current.set(account.id, intervalId);
-          }
-        } else {
-          const intervalId = pollIntervalsRef.current.get(account.id);
-          if (intervalId !== undefined) {
-            clearInterval(intervalId);
-            pollIntervalsRef.current.delete(account.id);
-          }
-        }
-      });
+    if (targets.length === 0) {
+      return;
     }
 
-    return () => {
-      pollIntervalsRef.current.forEach((intervalId) => {
-        clearInterval(intervalId);
-      });
-      pollIntervalsRef.current.clear();
-    };
-  }, [accountIds, connectionStatuses, fetchAll]);
+    const intervalId = window.setInterval(() => {
+      fetchNotifications(targets, true);
+    }, POLL_INTERVAL);
+
+    return () => clearInterval(intervalId);
+  }, [accounts, pollingAccountIds, fetchNotifications]);
+
+  // Streaming does not replay what was sent while the socket was down.
+  useEffect(() => {
+    const streamingIds = streamingAccountIds.split(",");
+    const resumed = accounts.filter(
+      (a) =>
+        streamingIds.includes(a.id) &&
+        !streamingAccountIdsRef.current.has(a.id) &&
+        latestIdsRef.current.has(a.id)
+    );
+    streamingAccountIdsRef.current = new Set(streamingIds);
+
+    if (resumed.length > 0) {
+      fetchNotifications(resumed, true);
+    }
+  }, [accounts, streamingAccountIds, fetchNotifications]);
 
   return { notifications, isLoading, errors, refresh, connectionStatuses };
 }
