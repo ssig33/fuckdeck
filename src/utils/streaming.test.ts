@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { MastodonStreamClient } from "./streaming";
+import { getInstanceInfo } from "./mastodon";
 
 vi.mock("./mastodon", () => ({
   getInstanceInfo: vi.fn().mockResolvedValue({
-    streamingUrl: "wss://example.com/api/v1/streaming",
+    streamingUrl: "wss://streaming.example.com",
   }),
 }));
 
@@ -26,7 +27,7 @@ class FakeWebSocket {
   }
 }
 
-describe("MastodonStreamClient.forceReconnect", () => {
+describe("MastodonStreamClient", () => {
   const originalWebSocket = globalThis.WebSocket;
 
   beforeEach(() => {
@@ -36,6 +37,26 @@ describe("MastodonStreamClient.forceReconnect", () => {
 
   afterEach(() => {
     globalThis.WebSocket = originalWebSocket;
+  });
+
+  it("appends the streaming path to the URL advertised by the instance", async () => {
+    const client = new MastodonStreamClient("example.com", "token");
+    await client.connect();
+
+    expect(FakeWebSocket.instances[0].url).toBe(
+      "wss://streaming.example.com/api/v1/streaming?stream=user&access_token=token"
+    );
+  });
+
+  it("uses the instance host when no streaming URL is advertised", async () => {
+    vi.mocked(getInstanceInfo).mockResolvedValueOnce({});
+
+    const client = new MastodonStreamClient("example.com", "token");
+    await client.connect();
+
+    expect(FakeWebSocket.instances[0].url).toBe(
+      "wss://example.com/api/v1/streaming?stream=user&access_token=token"
+    );
   });
 
   it("closes the current socket and opens a new one", async () => {

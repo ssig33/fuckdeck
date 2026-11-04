@@ -27,8 +27,8 @@ export class MastodonStreamClient {
       this.setStatus('connecting');
 
       const { streamingUrl } = await getInstanceInfo(this.instance);
-      const baseUrl = streamingUrl || `wss://${this.instance}/api/v1/streaming`;
-      const url = `${baseUrl}?stream=user&access_token=${this.token}`;
+      const baseUrl = streamingUrl || `wss://${this.instance}`;
+      const url = `${baseUrl}/api/v1/streaming?stream=user&access_token=${this.token}`;
 
       this.ws = new WebSocket(url);
 
