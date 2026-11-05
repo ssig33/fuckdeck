@@ -16,6 +16,7 @@ export class MastodonStreamClient {
   private readonly maxReconnectAttempts = 5;
   private reconnectTimeout: number | null = null;
   private isInitialConnect = true;
+  private connectAttempt = 0;
 
   constructor(instance: string, token: string) {
     this.instance = instance;
@@ -23,23 +24,30 @@ export class MastodonStreamClient {
   }
 
   async connect(): Promise<void> {
+    const attempt = ++this.connectAttempt;
+
     try {
       this.setStatus('connecting');
 
       const { streamingUrl } = await getInstanceInfo(this.instance);
+      if (attempt !== this.connectAttempt) {
+        return;
+      }
+
       const baseUrl = streamingUrl || `wss://${this.instance}`;
       const url = `${baseUrl}/api/v1/streaming?stream=user&access_token=${this.token}`;
 
-      this.ws = new WebSocket(url);
+      const ws = new WebSocket(url);
+      this.ws = ws;
 
-      this.ws.onopen = () => {
+      ws.onopen = () => {
         console.log(`[Streaming] Connected to ${this.instance}`);
         this.setStatus('streaming');
         this.reconnectAttempts = 0;
         this.isInitialConnect = false;
       };
 
-      this.ws.onmessage = (event) => {
+      ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
 
@@ -55,16 +63,17 @@ export class MastodonStreamClient {
         }
       };
 
-      this.ws.onerror = (error) => {
+      ws.onerror = (error) => {
         console.error(`[Streaming] WebSocket error for ${this.instance}:`, error);
 
         if (this.isInitialConnect) {
           this.setStatus('error');
-          this.disconnect();
+          // onclose stays attached: it performs the fallback to polling.
+          ws.close();
         }
       };
 
-      this.ws.onclose = () => {
+      ws.onclose = () => {
         console.log(`[Streaming] Connection closed for ${this.instance}`);
         this.ws = null;
 
@@ -86,39 +95,13 @@ export class MastodonStreamClient {
   }
 
   disconnect(): void {
-    if (this.reconnectTimeout !== null) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-
-    this.reconnectAttempts = 0;
+    this.stop();
   }
 
   forceReconnect(): void {
     console.log(`[Streaming] Force reconnect requested for ${this.instance}`);
 
-    if (this.reconnectTimeout !== null) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-
-    if (this.ws) {
-      // Detach handlers so closing the old socket does not trigger
-      // the automatic reconnect logic on top of this manual attempt.
-      this.ws.onopen = null;
-      this.ws.onmessage = null;
-      this.ws.onerror = null;
-      this.ws.onclose = null;
-      this.ws.close();
-      this.ws = null;
-    }
-
-    this.reconnectAttempts = 0;
+    this.stop();
 
     this.connect().catch((error) => {
       console.error(`[Streaming] Force reconnect failed for ${this.instance}:`, error);
@@ -137,6 +120,29 @@ export class MastodonStreamClient {
 
   getStatus(): ConnectionStatus {
     return this.status;
+  }
+
+  private stop(): void {
+    // Invalidates a connect() still waiting for the instance lookup.
+    this.connectAttempt++;
+
+    if (this.reconnectTimeout !== null) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    if (this.ws) {
+      // Detach handlers so closing the socket does not trigger
+      // the automatic reconnect logic.
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onerror = null;
+      this.ws.onclose = null;
+      this.ws.close();
+      this.ws = null;
+    }
+
+    this.reconnectAttempts = 0;
   }
 
   private setStatus(status: ConnectionStatus): void {

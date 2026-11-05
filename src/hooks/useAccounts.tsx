@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useRef, useMemo } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react";
 import { Account, PendingAuth, MastodonStatus, ConnectionStatus } from "../types";
 import { UnifiedNotification } from "../types/notification";
 import {
@@ -20,6 +20,7 @@ interface AccountContextValue {
   setPendingAuth: (auth: PendingAuth | null) => void;
   streamingStatuses: Map<string, MastodonStatus[]>;
   streamingNotifications: UnifiedNotification[];
+  deletedStatusIds: Map<string, Set<string>>;
   connectionStatuses: Map<string, ConnectionStatus>;
   forceReconnect: (accountId: string) => void;
 }
@@ -28,6 +29,7 @@ const AccountContext = createContext<AccountContextValue | null>(null);
 
 const MAX_STREAMING_STATUSES = 200;
 const MAX_STREAMING_NOTIFICATIONS = 200;
+const MAX_DELETED_STATUS_IDS = 1000;
 
 interface AccountProviderProps {
   children: ReactNode;
@@ -39,9 +41,8 @@ export function AccountProvider({ children }: AccountProviderProps) {
   const [streamingStatuses, setStreamingStatuses] = useState<Map<string, MastodonStatus[]>>(new Map());
   const [streamingNotifications, setStreamingNotifications] = useState<UnifiedNotification[]>([]);
   const [connectionStatuses, setConnectionStatuses] = useState<Map<string, ConnectionStatus>>(new Map());
+  const [deletedStatusIds, setDeletedStatusIds] = useState<Map<string, Set<string>>>(new Map());
   const streamClientsRef = useRef<Map<string, MastodonStreamClient>>(new Map());
-
-  const accountIds = useMemo(() => accounts.map(a => a.id).join(','), [accounts]);
 
   useEffect(() => {
     setAccounts(getAccounts());
@@ -85,10 +86,6 @@ export function AccountProvider({ children }: AccountProviderProps) {
   };
 
   useEffect(() => {
-    if (!accountIds) {
-      return;
-    }
-
     accounts.forEach((account) => {
       const existingClient = streamClientsRef.current.get(account.id);
       if (existingClient) {
@@ -144,6 +141,15 @@ export function AccountProvider({ children }: AccountProviderProps) {
             next.set(account.id, current.filter(s => s.id !== deletedId));
             return next;
           });
+          setDeletedStatusIds((prev) => {
+            const next = new Map(prev);
+            const current = next.get(account.id) || new Set<string>();
+            next.set(
+              account.id,
+              new Set([...current, deletedId].slice(-MAX_DELETED_STATUS_IDS))
+            );
+            return next;
+          });
         }
       });
 
@@ -167,6 +173,14 @@ export function AccountProvider({ children }: AccountProviderProps) {
           next.delete(accountId);
           return next;
         });
+        setStreamingNotifications((prev) =>
+          prev.filter((item) => item.targetAccount.id !== accountId)
+        );
+        setDeletedStatusIds((prev) => {
+          const next = new Map(prev);
+          next.delete(accountId);
+          return next;
+        });
         setConnectionStatuses((prev) => {
           const next = new Map(prev);
           next.delete(accountId);
@@ -174,14 +188,16 @@ export function AccountProvider({ children }: AccountProviderProps) {
         });
       }
     });
+  }, [accounts]);
 
+  useEffect(() => {
     return () => {
       streamClientsRef.current.forEach((client) => {
         client.disconnect();
       });
       streamClientsRef.current.clear();
     };
-  }, [accountIds, accounts]);
+  }, []);
 
   return (
     <AccountContext.Provider
@@ -194,6 +210,7 @@ export function AccountProvider({ children }: AccountProviderProps) {
         setPendingAuth,
         streamingStatuses,
         streamingNotifications,
+        deletedStatusIds,
         connectionStatuses,
         forceReconnect,
       }}

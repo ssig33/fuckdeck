@@ -112,4 +112,81 @@ describe("MastodonStreamClient", () => {
     second.onopen?.();
     expect(client.getStatus()).toBe("streaming");
   });
+
+  it("does not reconnect after disconnect", async () => {
+    vi.useFakeTimers();
+    try {
+      const client = new MastodonStreamClient("example.com", "token");
+      await client.connect();
+
+      const socket = FakeWebSocket.instances[0];
+      socket.onopen?.();
+
+      client.disconnect();
+      expect(socket.closed).toBe(true);
+      socket.onclose?.();
+
+      await vi.advanceTimersByTimeAsync(60000);
+
+      expect(FakeWebSocket.instances.length).toBe(1);
+      expect(client.getStatus()).toBe("streaming");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not open a socket when disconnected while looking up the instance", async () => {
+    const client = new MastodonStreamClient("example.com", "token");
+    const connecting = client.connect();
+
+    client.disconnect();
+    await connecting;
+
+    expect(FakeWebSocket.instances.length).toBe(0);
+  });
+
+  it("opens only one socket when force reconnecting during a pending connect", async () => {
+    const client = new MastodonStreamClient("example.com", "token");
+    const connecting = client.connect();
+
+    client.forceReconnect();
+    await connecting;
+
+    await vi.waitFor(() => {
+      expect(FakeWebSocket.instances.length).toBe(1);
+    });
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(FakeWebSocket.instances.length).toBe(1);
+  });
+
+  it("falls back to polling when the first connection fails", async () => {
+    const client = new MastodonStreamClient("example.com", "token");
+    await client.connect();
+
+    const socket = FakeWebSocket.instances[0];
+    socket.onerror?.(new Event("error"));
+    expect(socket.closed).toBe(true);
+    socket.onclose?.();
+
+    expect(client.getStatus()).toBe("polling");
+  });
+
+  it("reconnects automatically when an established connection drops", async () => {
+    vi.useFakeTimers();
+    try {
+      const client = new MastodonStreamClient("example.com", "token");
+      await client.connect();
+
+      const socket = FakeWebSocket.instances[0];
+      socket.onopen?.();
+      socket.onclose?.();
+      expect(client.getStatus()).toBe("connecting");
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(FakeWebSocket.instances.length).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
