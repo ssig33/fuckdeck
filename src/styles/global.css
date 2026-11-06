@@ -1,6 +1,14 @@
-.notification-content img {
+.notification-content img:not(.custom-emoji) {
   max-width: 100%;
   height: auto;
   border-radius: 4px;
   margin-top: 4px;
+}
+
+.custom-emoji {
+  height: 1.4em;
+  width: auto;
+  vertical-align: middle;
+  object-fit: contain;
+  margin: 0 0.05em;
 }

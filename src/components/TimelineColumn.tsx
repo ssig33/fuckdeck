@@ -12,6 +12,7 @@ import { useElementSize } from "@mantine/hooks";
 import { useCallback, useRef } from "react";
 import { List, useDynamicRowHeight } from "react-window";
 import { Account, MastodonStatus } from "../types";
+import { EmojiText } from "./EmojiText";
 import { useTimeline } from "../hooks/useTimeline";
 import { StatusCard } from "./StatusCard";
 import { useAccounts } from "../hooks/useAccounts";
@@ -103,7 +104,14 @@ export function TimelineColumn({ account }: TimelineColumnProps) {
           )}
           <Stack gap={0}>
             <Text size="sm" fw={600}>
-              {account.user?.display_name ?? account.user?.username ?? "Loading..."}
+              {account.user ? (
+                <EmojiText
+                  text={account.user.display_name || account.user.username}
+                  emojis={account.user.emojis}
+                />
+              ) : (
+                "Loading..."
+              )}
             </Text>
             <Text size="xs" c="dimmed">
               @{account.instance}

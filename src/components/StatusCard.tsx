@@ -8,6 +8,8 @@ import {
   unreblogStatus,
 } from "../utils/mastodon";
 import { extractGyazoIds } from "../utils/gyazo";
+import { emojifyHtml } from "../utils/emoji";
+import { EmojiText } from "./EmojiText";
 import { ReplyModal } from "./ReplyModal";
 import { MediaModal } from "./MediaModal";
 import { GyazoImage } from "./GyazoImage";
@@ -81,11 +83,20 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
     [displayStatus.content]
   );
 
+  const contentHtml = useMemo(
+    () => emojifyHtml(displayStatus.content, displayStatus.emojis),
+    [displayStatus.content, displayStatus.emojis]
+  );
+
   return (
     <Card p="sm" style={{ borderBottom: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))" }} radius={0}>
       {isReblog && (
         <Text size="xs" c="dimmed" mb="xs">
-          {status.account.display_name || status.account.username} reblogged
+          <EmojiText
+            text={status.account.display_name || status.account.username}
+            emojis={status.account.emojis}
+          />{" "}
+          reblogged
         </Text>
       )}
       <Group align="flex-start" gap="sm">
@@ -95,7 +106,10 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
           <Group gap="xs">
             <Text size="sm" fw={600}>
-              {displayStatus.account.display_name || displayStatus.account.username}
+              <EmojiText
+                text={displayStatus.account.display_name || displayStatus.account.username}
+                emojis={displayStatus.account.emojis}
+              />
             </Text>
             <Text size="xs" c="dimmed">
               @{displayStatus.account.acct}
@@ -146,12 +160,12 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
           </Group>
           {displayStatus.spoiler_text && (
             <Text size="sm" c="yellow">
-              CW: {displayStatus.spoiler_text}
+              CW: <EmojiText text={displayStatus.spoiler_text} emojis={displayStatus.emojis} />
             </Text>
           )}
           <Box
             style={{ wordBreak: "break-word" }}
-            dangerouslySetInnerHTML={{ __html: displayStatus.content }}
+            dangerouslySetInnerHTML={{ __html: contentHtml }}
           />
           {displayStatus.media_attachments.length > 0 && (
             <Group gap="xs" mt="xs">

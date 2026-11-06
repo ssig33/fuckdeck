@@ -1,5 +1,8 @@
 import { Card, Group, Avatar, Text, Stack, Box, Badge, Anchor } from "@mantine/core";
+import { useMemo } from "react";
 import { UnifiedNotification, NotificationType } from "../types";
+import { emojifyHtml } from "../utils/emoji";
+import { EmojiText } from "./EmojiText";
 
 interface NotificationCardProps {
   unified: UnifiedNotification;
@@ -28,6 +31,10 @@ export function NotificationCard({ unified }: NotificationCardProps) {
   const { notification, targetAccount } = unified;
   const { type, account, status, created_at } = notification;
   const typeInfo = getTypeLabel(type);
+  const contentHtml = useMemo(
+    () => (status ? emojifyHtml(status.content, status.emojis) : ""),
+    [status]
+  );
 
   return (
     <Card p="sm" style={{ borderBottom: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))" }} radius={0}>
@@ -47,7 +54,10 @@ export function NotificationCard({ unified }: NotificationCardProps) {
         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
           <Group gap="xs">
             <Text size="sm" fw={600}>
-              {account.display_name || account.username}
+              <EmojiText
+                text={account.display_name || account.username}
+                emojis={account.emojis}
+              />
             </Text>
             <Text size="xs" c="dimmed">
               @{account.acct}
@@ -73,7 +83,7 @@ export function NotificationCard({ unified }: NotificationCardProps) {
             <Box
               className="notification-content"
               style={{ wordBreak: "break-word" }}
-              dangerouslySetInnerHTML={{ __html: status.content }}
+              dangerouslySetInnerHTML={{ __html: contentHtml }}
             />
           )}
 

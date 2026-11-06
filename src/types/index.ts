@@ -1,3 +1,11 @@
+export interface CustomEmoji {
+  shortcode: string;
+  url: string;
+  static_url: string;
+  visible_in_picker: boolean;
+  category?: string | null;
+}
+
 export interface MastodonUser {
   id: string;
   username: string;
@@ -6,6 +14,7 @@ export interface MastodonUser {
   avatar: string;
   avatar_static: string;
   url: string;
+  emojis: CustomEmoji[];
 }
 
 export interface MediaAttachment {
@@ -40,6 +49,7 @@ export interface MastodonStatus {
   favourited: boolean;
   reblogged: boolean;
   visibility: Visibility;
+  emojis: CustomEmoji[];
 }
 
 export interface InstanceLimits {

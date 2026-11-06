@@ -152,6 +152,15 @@ demand for accounts added before the limits were persisted.
 | ColumnLayout | Horizontal layout of account columns |
 | TimelineColumn | Single account timeline, delete button |
 | StatusCard | Single post display (reblog support) |
+| EmojiText | Plain text with custom emoji images |
+
+## Custom Emoji
+
+Statuses and accounts carry the custom emojis they use in `emojis`.
+`utils/emoji.ts` replaces `:shortcode:` with `<img class="custom-emoji">`:
+
+- `emojifyHtml`: for status HTML content; only text nodes are replaced
+- `splitByEmojis`: for plain text (display names, CW), rendered by `EmojiText`
 
 ## Design Rules
 
