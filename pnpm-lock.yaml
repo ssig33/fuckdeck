@@ -10,10 +10,10 @@ importers:
     dependencies:
       '@mantine/core':
         specifier: ^9.3.0
-        version: 9.7.4(@mantine/hooks@9.7.4(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 9.7.5(@mantine/hooks@9.7.5(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@mantine/hooks':
         specifier: ^9.3.0
-        version: 9.7.4(react@19.3.1)
+        version: 9.7.5(react@19.3.1)
       '@types/react':
         specifier: ^19.2.16
         version: 19.3.0
@@ -468,15 +468,15 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
 
-  '@mantine/core@9.7.4':
-    resolution: {integrity: sha512-c7aTGELNn74CxG9i5/tq9BHGh0lKdKmGGz+9iDF+gR7Ipt4U1TMM286lAmLpRrKL2bR+UEaN4blZ8UJmOuGJ4Q==}
+  '@mantine/core@9.7.5':
+    resolution: {integrity: sha512-NiOTHpAZssi1Z5ISZBvcXEA4XDn0BWcxwpmmUthFx/eL0CsJ18FXMn/ydRCJmoeMGcIKmRE+pjt90KM70GOsUw==}
     peerDependencies:
-      '@mantine/hooks': 9.7.4
+      '@mantine/hooks': 9.7.5
       react: ^19.2.0
       react-dom: ^19.2.0
 
-  '@mantine/hooks@9.7.4':
-    resolution: {integrity: sha512-j6Xf9Sc1fhhGEKXg6BZA2geyP/Czqvo6Rsi0IduOCWgwl/MAAJbKRjRc7xe2+9vePLdfqLZqRIAOY5rta88uNA==}
+  '@mantine/hooks@9.7.5':
+    resolution: {integrity: sha512-+3cNisLOUkzF77SjRKkG/V+svZii9WDGvcwlaxFH58b14MNohz1zWbV+WfjZt9qfzrIPPUOedks/z6PMo5rAFA==}
     peerDependencies:
       react: ^19.2.0
 
@@ -1376,10 +1376,10 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
-  '@mantine/core@9.7.4(@mantine/hooks@9.7.4(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@mantine/core@9.7.5(@mantine/hooks@9.7.5(react@19.3.1))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@floating-ui/react': 0.27.20(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@mantine/hooks': 9.7.4(react@19.3.1)
+      '@mantine/hooks': 9.7.5(react@19.3.1)
       clsx: 2.1.1
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
@@ -1389,7 +1389,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  '@mantine/hooks@9.7.4(react@19.3.1)':
+  '@mantine/hooks@9.7.5(react@19.3.1)':
     dependencies:
       react: 19.3.1
 
