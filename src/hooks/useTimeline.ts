@@ -20,7 +20,7 @@ interface UseTimelineResult {
 }
 
 export function useTimeline(account: Account): UseTimelineResult {
-  const { streamingStatuses, connectionStatuses } = useAccounts();
+  const { streamingStatuses, connectionStatuses, deletedStatusIds } = useAccounts();
   const [pollingStatuses, setPollingStatuses] = useState<MastodonStatus[]>([]);
   const [olderStatuses, setOlderStatuses] = useState<MastodonStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,12 +34,13 @@ export function useTimeline(account: Account): UseTimelineResult {
 
   const connectionStatus = connectionStatuses.get(account.id) || 'connecting';
   const streamStatuses = streamingStatuses.get(account.id) || [];
+  const deletedIds = deletedStatusIds.get(account.id);
 
   const statuses = useMemo(() => {
     const statusMap = new Map<string, MastodonStatus>();
 
     [...streamStatuses, ...pollingStatuses, ...olderStatuses].forEach(status => {
-      if (!statusMap.has(status.id)) {
+      if (!statusMap.has(status.id) && !deletedIds?.has(status.id)) {
         statusMap.set(status.id, status);
       }
     });
@@ -47,7 +48,7 @@ export function useTimeline(account: Account): UseTimelineResult {
     return Array.from(statusMap.values()).sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-  }, [streamStatuses, pollingStatuses, olderStatuses]);
+  }, [streamStatuses, pollingStatuses, olderStatuses, deletedIds]);
 
   useEffect(() => {
     if (statuses.length > 0) {
@@ -133,9 +134,7 @@ export function useTimeline(account: Account): UseTimelineResult {
     } else {
       if (pollIntervalRef.current === null) {
         pollIntervalRef.current = window.setInterval(() => {
-          if (latestIdRef.current) {
-            fetchTimeline(latestIdRef.current);
-          }
+          fetchTimeline(latestIdRef.current ?? undefined);
         }, POLL_INTERVAL);
       }
     }
