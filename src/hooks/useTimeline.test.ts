@@ -95,6 +95,55 @@ describe("useTimeline", () => {
     );
   });
 
+  it("keeps polled statuses when the connection switches to streaming", async () => {
+    setContext("polling");
+    // Newest first, like the home timeline API.
+    const server: MastodonStatus[] = Array.from({ length: 40 }, (_, i) =>
+      makeStatus(String(100 + i), i)
+    ).reverse();
+    vi.mocked(getHomeTimeline).mockImplementation(async (_i, _t, options = {}) => {
+      const newer = options.sinceId
+        ? server.filter((s) => Number(s.id) > Number(options.sinceId))
+        : server;
+      return newer.slice(0, options.limit);
+    });
+
+    const { result, rerender } = renderHook(() => useTimeline(account));
+    await flush();
+    for (let i = 0; i < 10; i++) {
+      server.unshift(makeStatus(String(200 + i), 100 + i));
+    }
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL);
+    });
+    expect(result.current.statuses).toHaveLength(50);
+
+    setContext("streaming");
+    rerender();
+    await flush();
+
+    expect(result.current.statuses).toHaveLength(50);
+  });
+
+  it("replaces statuses when the catch-up fetch may leave a gap", async () => {
+    setContext("polling");
+    const before = Array.from({ length: 5 }, (_, i) => makeStatus(String(100 + i), i));
+    const after = Array.from({ length: 40 }, (_, i) => makeStatus(String(200 + i), 100 + i));
+    vi.mocked(getHomeTimeline).mockResolvedValueOnce([...before].reverse());
+    vi.mocked(getHomeTimeline).mockResolvedValueOnce([...after].reverse());
+
+    const { result, rerender } = renderHook(() => useTimeline(account));
+    await flush();
+
+    setContext("streaming");
+    rerender();
+    await flush();
+
+    expect(result.current.statuses.map((s) => s.id)).toEqual(
+      [...after].reverse().map((s) => s.id)
+    );
+  });
+
   it("hides deleted statuses that came from fetching", async () => {
     setContext("streaming");
     vi.mocked(getHomeTimeline).mockResolvedValue([

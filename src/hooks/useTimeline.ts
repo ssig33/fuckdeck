@@ -5,7 +5,7 @@ import { useAccounts } from "./useAccounts";
 
 const POLL_INTERVAL = 60000;
 const MAX_RECENT_STATUSES = 200;
-const OLDER_PAGE_SIZE = 40;
+const PAGE_SIZE = 40;
 
 interface UseTimelineResult {
   statuses: MastodonStatus[];
@@ -62,11 +62,12 @@ export function useTimeline(account: Account): UseTimelineResult {
         const newStatuses = await getHomeTimeline(
           account.instance,
           account.accessToken,
-          { sinceId, limit: 40 }
+          { sinceId, limit: PAGE_SIZE }
         );
 
         if (newStatuses.length > 0) {
-          if (sinceId) {
+          // A full page may not reach back to sinceId; merging would leave a gap.
+          if (sinceId && newStatuses.length < PAGE_SIZE) {
             setPollingStatuses((prev) =>
               [...newStatuses, ...prev].slice(0, MAX_RECENT_STATUSES)
             );
@@ -97,7 +98,7 @@ export function useTimeline(account: Account): UseTimelineResult {
     try {
       const older = await getHomeTimeline(account.instance, account.accessToken, {
         maxId: oldestIdRef.current,
-        limit: OLDER_PAGE_SIZE,
+        limit: PAGE_SIZE,
       });
 
       if (older.length > 0) {
@@ -124,7 +125,7 @@ export function useTimeline(account: Account): UseTimelineResult {
   }, [fetchTimeline]);
 
   useEffect(() => {
-    fetchTimeline();
+    fetchTimeline(latestIdRef.current ?? undefined);
 
     if (connectionStatus === 'streaming') {
       if (pollIntervalRef.current !== null) {
