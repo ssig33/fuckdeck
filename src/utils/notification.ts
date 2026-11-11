@@ -1,11 +1,12 @@
 import { MastodonNotification } from "../types";
+import { authorizedRequest } from "./mastodon";
 
 export interface GetNotificationsOptions {
   sinceId?: string;
   limit?: number;
 }
 
-export async function getNotifications(
+export function getNotifications(
   instance: string,
   token: string,
   options: GetNotificationsOptions = {}
@@ -18,15 +19,5 @@ export async function getNotifications(
     url.searchParams.set("limit", String(options.limit));
   }
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to get notifications: ${response.status}`);
-  }
-
-  return response.json();
+  return authorizedRequest(url.toString(), token, "get notifications");
 }

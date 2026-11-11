@@ -5,6 +5,9 @@ import {
   verifyCredentials,
   getHomeTimeline,
   getInstanceLimits,
+  postStatus,
+  uploadMedia,
+  reblogStatus,
 } from "./mastodon";
 
 const mockFetch = vi.fn();
@@ -154,6 +157,58 @@ describe("mastodon", () => {
       expect(mockFetch).toHaveBeenCalledWith(
         "https://mastodon.social/api/v1/timelines/home?max_id=67890&limit=40",
         expect.any(Object)
+      );
+    });
+  });
+
+  describe("postStatus", () => {
+    it("posts the options as JSON with the token", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ id: "9" }) });
+
+      const result = await postStatus("mastodon.social", "access-token", {
+        status: "hello",
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://mastodon.social/api/v1/statuses",
+        {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer access-token",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "hello" }),
+        }
+      );
+      expect(result).toEqual({ id: "9" });
+    });
+  });
+
+  describe("uploadMedia", () => {
+    it("sends form data without a JSON content type", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ id: "m" }) });
+
+      const file = new File(["x"], "a.png", { type: "image/png" });
+      await uploadMedia("mastodon.social", "access-token", file, "alt");
+
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toBe("https://mastodon.social/api/v2/media");
+      expect(init.headers).toEqual({ Authorization: "Bearer access-token" });
+      expect(init.body).toBeInstanceOf(FormData);
+      expect(init.body.get("description")).toBe("alt");
+    });
+  });
+
+  describe("status actions", () => {
+    it("throws with the action and status code when the request fails", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+
+      await expect(
+        reblogStatus("mastodon.social", "access-token", "42")
+      ).rejects.toThrow("Failed to reblog status: 404");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://mastodon.social/api/v1/statuses/42/reblog",
+        expect.objectContaining({ method: "POST" })
       );
     });
   });

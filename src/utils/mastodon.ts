@@ -84,24 +84,41 @@ export async function exchangeToken(
   return data.access_token;
 }
 
-export async function verifyCredentials(
-  instance: string,
-  token: string
-): Promise<MastodonUser> {
-  const response = await fetch(
-    `https://${instance}/api/v1/accounts/verify_credentials`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+/**
+ * Sends an authorized request and returns the parsed JSON body.
+ * Throws `Failed to <action>: <status>` when the response is not ok.
+ */
+export async function authorizedRequest<T>(
+  url: string,
+  token: string,
+  action: string,
+  init: { method?: string; body?: BodyInit; json?: unknown } = {}
+): Promise<T> {
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  let body = init.body;
+  if (init.json !== undefined) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(init.json);
+  }
+
+  const response = await fetch(url, { method: init.method, headers, body });
 
   if (!response.ok) {
-    throw new Error(`Failed to verify credentials: ${response.status}`);
+    throw new Error(`Failed to ${action}: ${response.status}`);
   }
 
   return response.json();
+}
+
+export function verifyCredentials(
+  instance: string,
+  token: string
+): Promise<MastodonUser> {
+  return authorizedRequest(
+    `https://${instance}/api/v1/accounts/verify_credentials`,
+    token,
+    "verify credentials"
+  );
 }
 
 export interface GetTimelineOptions {
@@ -110,7 +127,7 @@ export interface GetTimelineOptions {
   limit?: number;
 }
 
-export async function getHomeTimeline(
+export function getHomeTimeline(
   instance: string,
   token: string,
   options: GetTimelineOptions = {}
@@ -126,20 +143,10 @@ export async function getHomeTimeline(
     url.searchParams.set("limit", String(options.limit));
   }
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to get timeline: ${response.status}`);
-  }
-
-  return response.json();
+  return authorizedRequest(url.toString(), token, "get timeline");
 }
 
-export async function uploadMedia(
+export function uploadMedia(
   instance: string,
   token: string,
   file: File,
@@ -151,128 +158,73 @@ export async function uploadMedia(
     formData.append("description", description);
   }
 
-  const response = await fetch(`https://${instance}/api/v2/media`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to upload media: ${response.status}`);
-  }
-
-  return response.json();
+  return authorizedRequest(
+    `https://${instance}/api/v2/media`,
+    token,
+    "upload media",
+    { method: "POST", body: formData }
+  );
 }
 
-export async function postStatus(
+export function postStatus(
   instance: string,
   token: string,
   options: PostStatusOptions
 ): Promise<MastodonStatus> {
-  const response = await fetch(`https://${instance}/api/v1/statuses`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(options),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to post status: ${response.status}`);
-  }
-
-  return response.json();
+  return authorizedRequest(
+    `https://${instance}/api/v1/statuses`,
+    token,
+    "post status",
+    { method: "POST", json: options }
+  );
 }
 
-export async function favouriteStatus(
+type StatusAction = "favourite" | "unfavourite" | "reblog" | "unreblog";
+
+function statusAction(
+  instance: string,
+  token: string,
+  statusId: string,
+  action: StatusAction
+): Promise<MastodonStatus> {
+  return authorizedRequest(
+    `https://${instance}/api/v1/statuses/${statusId}/${action}`,
+    token,
+    `${action} status`,
+    { method: "POST" }
+  );
+}
+
+export function favouriteStatus(
   instance: string,
   token: string,
   statusId: string
 ): Promise<MastodonStatus> {
-  const response = await fetch(
-    `https://${instance}/api/v1/statuses/${statusId}/favourite`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to favourite status: ${response.status}`);
-  }
-
-  return response.json();
+  return statusAction(instance, token, statusId, "favourite");
 }
 
-export async function unfavouriteStatus(
+export function unfavouriteStatus(
   instance: string,
   token: string,
   statusId: string
 ): Promise<MastodonStatus> {
-  const response = await fetch(
-    `https://${instance}/api/v1/statuses/${statusId}/unfavourite`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to unfavourite status: ${response.status}`);
-  }
-
-  return response.json();
+  return statusAction(instance, token, statusId, "unfavourite");
 }
 
-export async function reblogStatus(
+export function reblogStatus(
   instance: string,
   token: string,
   statusId: string
 ): Promise<MastodonStatus> {
-  const response = await fetch(
-    `https://${instance}/api/v1/statuses/${statusId}/reblog`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to reblog status: ${response.status}`);
-  }
-
-  return response.json();
+  return statusAction(instance, token, statusId, "reblog");
 }
 
-export async function unreblogStatus(
+export function unreblogStatus(
   instance: string,
   token: string,
   statusId: string
 ): Promise<MastodonStatus> {
-  const response = await fetch(
-    `https://${instance}/api/v1/statuses/${statusId}/unreblog`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to unreblog status: ${response.status}`);
-  }
-
-  return response.json();
+  return statusAction(instance, token, statusId, "unreblog");
 }
 
 export async function getInstanceInfo(

@@ -1,8 +1,6 @@
 {
   "name": "fuckdeck",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
   "scripts": {
     "build": "tsx esbuild.ts",
     "dev": "tsx esbuild.ts --watch",
@@ -16,19 +14,19 @@
   "dependencies": {
     "@mantine/core": "^9.3.0",
     "@mantine/hooks": "^9.3.0",
-    "@types/react": "^19.2.16",
-    "@types/react-dom": "^19.2.3",
-    "esbuild": "^0.28.0",
-    "esbuild-server": "^0.3.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-window": "^2.2.7",
-    "tsx": "^4.22.4"
+    "react-window": "^2.2.7"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.0",
+    "esbuild-server": "^0.3.0",
     "jsdom": "^30.0.0",
+    "tsx": "^4.22.4",
     "vitest": "^4.1.8"
   }
 }
