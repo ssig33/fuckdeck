@@ -25,7 +25,7 @@
     "@types/react-dom": "^19.2.3",
     "esbuild": "^0.28.0",
     "esbuild-server": "^0.3.0",
-    "jsdom": "^30.0.0",
+    "jsdom": "^31.0.0",
     "tsx": "^4.22.4",
     "vitest": "^4.1.8"
   }
