@@ -19,13 +19,9 @@ import {
 } from "../utils/storage";
 import { Visibility } from "../types";
 import { MediaPreview } from "./MediaPreview";
+import { VISIBILITY_OPTIONS, isSubmitShortcut, toAccountOptions } from "./compose";
 
-const VISIBILITY_OPTIONS = [
-  { value: "public", label: "Public" },
-  { value: "unlisted", label: "Unlisted" },
-  { value: "private", label: "Followers only" },
-  { value: "direct", label: "Direct" },
-];
+const DEFAULT_VISIBILITY: Visibility = "public";
 
 export function ComposeForm() {
   const { accounts } = useAccounts();
@@ -33,7 +29,7 @@ export function ComposeForm() {
     null
   );
   const [content, setContent] = useState("");
-  const [visibility, setVisibility] = useState<Visibility>("public");
+  const [visibility, setVisibility] = useState<Visibility>(DEFAULT_VISIBILITY);
   const [spoilerText, setSpoilerText] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,10 +61,9 @@ export function ComposeForm() {
 
   useEffect(() => {
     if (selectedAccountId) {
-      const saved = getDefaultVisibility(selectedAccountId);
-      if (saved) {
-        setVisibility(saved);
-      }
+      setVisibility(
+        getDefaultVisibility(selectedAccountId) ?? DEFAULT_VISIBILITY
+      );
     }
   }, [selectedAccountId]);
 
@@ -80,7 +75,7 @@ export function ComposeForm() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    if (isSubmitShortcut(e)) {
       e.preventDefault();
       if (canPost) {
         handlePost();
@@ -140,16 +135,14 @@ export function ComposeForm() {
     }
   };
 
-  const accountOptions = accounts.map((account) => ({
-    value: account.id,
-    label: `@${account.user?.username ?? "..."}@${account.instance}`,
-  }));
+  const accountOptions = toAccountOptions(accounts);
 
   const canPost =
     selectedAccount &&
     content.trim() &&
     content.length <= limits.maxCharacters &&
-    !isUploading;
+    !isUploading &&
+    !isPosting;
 
   return (
     <Stack gap="sm">
@@ -216,7 +209,7 @@ export function ComposeForm() {
         label="Visibility"
         data={VISIBILITY_OPTIONS}
         value={visibility}
-        onChange={(v) => handleVisibilityChange((v as Visibility) ?? "public")}
+        onChange={(v) => handleVisibilityChange((v as Visibility) ?? DEFAULT_VISIBILITY)}
       />
 
       {error && (

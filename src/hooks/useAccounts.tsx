@@ -9,6 +9,7 @@ import {
   clearPendingAuth,
 } from "../utils/storage";
 import { MastodonStreamClient, parseStreamPayload } from "../utils/streaming";
+import { byNewest } from "../utils/notification";
 import { MastodonNotification } from "../types/notification";
 
 interface AccountContextValue {
@@ -125,11 +126,7 @@ export function AccountProvider({ children }: AccountProviderProps) {
             };
             setStreamingNotifications((prev) =>
               [unified, ...prev]
-                .sort(
-                  (a, b) =>
-                    new Date(b.notification.created_at).getTime() -
-                    new Date(a.notification.created_at).getTime()
-                )
+                .sort(byNewest)
                 .slice(0, MAX_STREAMING_NOTIFICATIONS)
             );
           }

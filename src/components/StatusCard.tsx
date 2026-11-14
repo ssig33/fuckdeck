@@ -197,6 +197,7 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
         opened={replyModalOpened}
         onClose={handleCloseReply}
         replyTo={replyTo}
+        sourceInstance={instance}
       />
       <MediaModal
         opened={mediaModalOpened}
