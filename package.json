@@ -10,7 +10,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@11.28.12",
+  "packageManager": "pnpm@12.18.0",
   "dependencies": {
     "@mantine/core": "^9.3.0",
     "@mantine/hooks": "^9.3.0",
