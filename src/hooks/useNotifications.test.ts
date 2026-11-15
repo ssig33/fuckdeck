@@ -10,7 +10,8 @@ import {
   UnifiedNotification,
 } from "../types";
 
-vi.mock("../utils/notification", () => ({
+vi.mock("../utils/notification", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../utils/notification")>()),
   getNotifications: vi.fn(),
 }));
 
@@ -207,7 +208,7 @@ describe("useNotifications", () => {
       async (instance, _token, options) => {
         if (instance !== a.instance) return [];
         if (!options?.sinceId) return [makeNotification("999")];
-        return Array.from({ length: 30 }, () =>
+        return Array.from({ length: 29 }, () =>
           makeNotification(String(next++), next % 60)
         );
       }
@@ -221,5 +222,48 @@ describe("useNotifications", () => {
     }
 
     expect(result.current.notifications.length).toBe(200);
+  });
+
+  it("merges a catch-up fetch that is shorter than a page", async () => {
+    setContext({ a: "polling", b: "streaming" });
+    vi.mocked(getNotifications).mockImplementation(
+      async (instance, _token, options) => {
+        if (instance !== a.instance) return [];
+        if (!options?.sinceId) return [makeNotification("1", 1)];
+        return [makeNotification("2", 2)];
+      }
+    );
+
+    const { result } = renderHook(() => useNotifications(accounts));
+    await flush();
+    await advancePollInterval();
+
+    expect(
+      result.current.notifications.map((item) => item.notification.id)
+    ).toEqual(["2", "1"]);
+  });
+
+  it("replaces an account's notifications when the catch-up fetch may leave a gap", async () => {
+    setContext({ a: "polling", b: "polling" });
+    vi.mocked(getNotifications).mockImplementation(
+      async (instance, _token, options) => {
+        if (!options?.sinceId) return [makeNotification("1", 1)];
+        if (instance !== a.instance) return [];
+        return Array.from({ length: 30 }, (_, i) =>
+          makeNotification(String(100 - i), 50 - i)
+        );
+      }
+    );
+
+    const { result } = renderHook(() => useNotifications(accounts));
+    await flush();
+    await advancePollInterval();
+
+    const ids = result.current.notifications.map(
+      (item) => `${item.targetAccount.id}:${item.notification.id}`
+    );
+    expect(ids.length).toBe(31);
+    expect(ids).not.toContain("a:1");
+    expect(ids).toContain("b:1");
   });
 });

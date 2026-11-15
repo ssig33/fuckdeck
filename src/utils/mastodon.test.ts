@@ -8,7 +8,9 @@ import {
   postStatus,
   uploadMedia,
   reblogStatus,
+  resolveStatusId,
 } from "./mastodon";
+import { MastodonStatus } from "../types";
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -255,6 +257,46 @@ describe("mastodon", () => {
       const result = await getInstanceLimits("broken.example");
 
       expect(result).toEqual({ maxCharacters: 500, maxMediaAttachments: 4 });
+    });
+  });
+
+  describe("resolveStatusId", () => {
+    const status = {
+      id: "111",
+      uri: "https://origin.example/users/alice/statuses/1",
+    } as MastodonStatus;
+
+    it("uses the status id on the instance it was fetched from", async () => {
+      const id = await resolveStatusId("a.example", "token", status, "a.example");
+
+      expect(id).toBe("111");
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("looks up the status by its uri on another instance", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ statuses: [{ id: "222" }] }),
+      });
+
+      const id = await resolveStatusId("b.example", "token", status, "a.example");
+
+      expect(id).toBe("222");
+      const url = new URL(mockFetch.mock.calls[0][0]);
+      expect(url.origin + url.pathname).toBe("https://b.example/api/v2/search");
+      expect(url.searchParams.get("q")).toBe(status.uri);
+      expect(url.searchParams.get("resolve")).toBe("true");
+    });
+
+    it("fails when the other instance cannot find the status", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ statuses: [] }),
+      });
+
+      await expect(
+        resolveStatusId("b.example", "token", status, "a.example")
+      ).rejects.toThrow("Failed to find status on b.example");
     });
   });
 });

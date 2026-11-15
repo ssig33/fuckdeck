@@ -1,5 +1,15 @@
-import { MastodonNotification } from "../types";
+import { MastodonNotification, UnifiedNotification } from "../types";
 import { authorizedRequest } from "./mastodon";
+
+export function byNewest(
+  a: UnifiedNotification,
+  b: UnifiedNotification
+): number {
+  return (
+    new Date(b.notification.created_at).getTime() -
+    new Date(a.notification.created_at).getTime()
+  );
+}
 
 export interface GetNotificationsOptions {
   sinceId?: string;

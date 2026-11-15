@@ -2,23 +2,24 @@ import { useState, useEffect } from "react";
 import { Modal, Stack, Textarea, Button, Select, Text } from "@mantine/core";
 import { useAccounts } from "../hooks/useAccounts";
 import { useInstanceLimits } from "../hooks/useInstanceLimits";
-import { postStatus } from "../utils/mastodon";
+import { postStatus, resolveStatusId } from "../utils/mastodon";
 import { MastodonStatus, Visibility } from "../types";
-
-const VISIBILITY_OPTIONS = [
-  { value: "public", label: "Public" },
-  { value: "unlisted", label: "Unlisted" },
-  { value: "private", label: "Followers only" },
-  { value: "direct", label: "Direct" },
-];
+import { VISIBILITY_OPTIONS, isSubmitShortcut, toAccountOptions } from "./compose";
 
 interface ReplyModalProps {
   opened: boolean;
   onClose: () => void;
   replyTo: MastodonStatus | null;
+  /** The instance `replyTo` was fetched from; its id belongs to this instance. */
+  sourceInstance: string;
 }
 
-export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
+export function ReplyModal({
+  opened,
+  onClose,
+  replyTo,
+  sourceInstance,
+}: ReplyModalProps) {
   const { accounts } = useAccounts();
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [content, setContent] = useState("");
@@ -29,20 +30,16 @@ export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
   const limits = useInstanceLimits(selectedAccount);
 
-  // アカウント自動選択（返信先と同じインスタンス優先）
+  // Prefer an account on the instance the status was fetched from, so the
+  // status id can be used without resolving it.
   useEffect(() => {
     if (replyTo && accounts.length > 0) {
-      // 返信先のインスタンスを抽出
-      const replyToInstance = replyTo.account.url.replace(/^https?:\/\//, '').split('/')[0];
-
-      // 同じインスタンスのアカウントを探す
       const sameInstanceAccount = accounts.find(
-        (a) => a.instance === replyToInstance
+        (a) => a.instance === sourceInstance
       );
-
       setSelectedAccountId(sameInstanceAccount?.id || accounts[0].id);
     }
-  }, [replyTo, accounts]);
+  }, [replyTo, accounts, sourceInstance]);
 
   // メンション自動挿入とvisibility設定
   useEffect(() => {
@@ -59,10 +56,16 @@ export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
     setError(null);
 
     try {
+      const inReplyToId = await resolveStatusId(
+        selectedAccount.instance,
+        selectedAccount.accessToken,
+        replyTo,
+        sourceInstance
+      );
       await postStatus(selectedAccount.instance, selectedAccount.accessToken, {
         status: content,
         visibility,
-        in_reply_to_id: replyTo.id,
+        in_reply_to_id: inReplyToId,
       });
 
       setContent("");
@@ -81,7 +84,7 @@ export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    if (isSubmitShortcut(e)) {
       e.preventDefault();
       if (canPost) {
         handlePost();
@@ -91,15 +94,13 @@ export function ReplyModal({ opened, onClose, replyTo }: ReplyModalProps) {
 
   if (!replyTo) return null;
 
-  const accountOptions = accounts.map((account) => ({
-    value: account.id,
-    label: `@${account.user?.username ?? "..."}@${account.instance}`,
-  }));
+  const accountOptions = toAccountOptions(accounts);
 
   const canPost =
-    selectedAccountId &&
+    selectedAccount &&
     content.trim() &&
-    content.length <= limits.maxCharacters;
+    content.length <= limits.maxCharacters &&
+    !isPosting;
 
   return (
     <Modal

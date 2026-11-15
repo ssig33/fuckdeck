@@ -179,7 +179,40 @@ export function postStatus(
   );
 }
 
-type StatusAction = "favourite" | "unfavourite" | "reblog" | "unreblog";
+/**
+ * Returns the id that `instance` uses for `status`, which was fetched from
+ * `sourceInstance`. Status ids are only meaningful on the instance that
+ * issued them.
+ */
+export async function resolveStatusId(
+  instance: string,
+  token: string,
+  status: MastodonStatus,
+  sourceInstance: string
+): Promise<string> {
+  if (instance === sourceInstance) {
+    return status.id;
+  }
+
+  const url = new URL(`https://${instance}/api/v2/search`);
+  url.searchParams.set("q", status.uri);
+  url.searchParams.set("type", "statuses");
+  url.searchParams.set("resolve", "true");
+  url.searchParams.set("limit", "1");
+
+  const result = await authorizedRequest<{ statuses: MastodonStatus[] }>(
+    url.toString(),
+    token,
+    "find status"
+  );
+  const resolved = result.statuses[0];
+  if (!resolved) {
+    throw new Error(`Failed to find status on ${instance}`);
+  }
+  return resolved.id;
+}
+
+type StatusAction ="favourite" | "unfavourite" | "reblog" | "unreblog";
 
 function statusAction(
   instance: string,

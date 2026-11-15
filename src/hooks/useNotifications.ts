@@ -1,17 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Account, UnifiedNotification, ConnectionStatus } from "../types";
-import { getNotifications } from "../utils/notification";
+import { byNewest, getNotifications } from "../utils/notification";
 import { useAccounts } from "./useAccounts";
 
 const POLL_INTERVAL = 60000;
 const MAX_POLLING_NOTIFICATIONS = 200;
-
-function byNewest(a: UnifiedNotification, b: UnifiedNotification): number {
-  return (
-    new Date(b.notification.created_at).getTime() -
-    new Date(a.notification.created_at).getTime()
-  );
-}
+const PAGE_SIZE = 30;
 
 function joinAccountIds(accounts: Account[]): string {
   return accounts.map((a) => a.id).join(",");
@@ -61,6 +55,7 @@ export function useNotifications(accounts: Account[]): UseNotificationsResult {
         return;
       }
 
+      const replacedAccountIds = new Set<string>();
       const results = await Promise.allSettled(
         targets.map(async (account) => {
           const sinceId = useSinceIds
@@ -69,11 +64,16 @@ export function useNotifications(accounts: Account[]): UseNotificationsResult {
           const rawNotifications = await getNotifications(
             account.instance,
             account.accessToken,
-            { sinceId, limit: 30 }
+            { sinceId, limit: PAGE_SIZE }
           );
 
           if (rawNotifications.length > 0) {
             latestIdsRef.current.set(account.id, rawNotifications[0].id);
+          }
+
+          // A full page may not reach back to sinceId; merging would leave a gap.
+          if (sinceId && rawNotifications.length >= PAGE_SIZE) {
+            replacedAccountIds.add(account.id);
           }
 
           return rawNotifications.map((notification) => ({
@@ -108,7 +108,12 @@ export function useNotifications(accounts: Account[]): UseNotificationsResult {
 
       if (useSinceIds && newNotifications.length > 0) {
         setPollingNotifications((prev) =>
-          [...newNotifications, ...prev]
+          [
+            ...newNotifications,
+            ...prev.filter(
+              (item) => !replacedAccountIds.has(item.targetAccount.id)
+            ),
+          ]
             .sort(byNewest)
             .slice(0, MAX_POLLING_NOTIFICATIONS)
         );

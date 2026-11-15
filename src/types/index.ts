@@ -43,6 +43,7 @@ export interface MastodonStatus {
   favourites_count: number;
   reblogs_count: number;
   replies_count: number;
+  uri: string;
   url: string;
   spoiler_text: string;
   sensitive: boolean;
