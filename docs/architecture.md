@@ -223,6 +223,21 @@ Statuses and accounts carry the custom emojis they use in `emojis`.
 - `emojifyHtml`: for status HTML content; only text nodes are replaced
 - `splitByEmojis`: for plain text (display names, CW), rendered by `EmojiText`
 
+## Installable App
+
+`public/manifest.webmanifest` makes the app installable (standalone window,
+relative `start_url` / `scope` so it works under the GitHub Pages subpath).
+The icons in `public/` are made from `favicon.png` with ImageMagick: trimmed,
+centered, `icon-192.png` / `icon-512.png` on transparent, `icon-maskable-512.png`
+inside the maskable safe zone on a light background, `apple-touch-icon.png` on
+white.
+
+`public/sw.js` is registered from `src/index.tsx`. It is network first for
+the app's own files and falls back to its cache only when offline; requests to
+Mastodon / Misskey servers pass through untouched. Header shows an
+"Install app" button when the browser fires `beforeinstallprompt`
+(`useInstallPrompt`, Chromium only).
+
 ## Design Rules
 
 - No default exports (named exports only)

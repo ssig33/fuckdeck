@@ -25,6 +25,12 @@ function AppWithTheme() {
   );
 }
 
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").catch((error) => {
+    console.warn("Service worker registration failed:", error);
+  });
+}
+
 const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(
