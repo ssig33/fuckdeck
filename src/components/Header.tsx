@@ -1,11 +1,17 @@
-import { Group, Title, Button, Anchor, SegmentedControl } from "@mantine/core";
+import { Group, Title, Button, Anchor, SegmentedControl, Switch } from "@mantine/core";
 import { useColorScheme } from "../contexts/ColorSchemeContext";
 
 interface HeaderProps {
   onAddAccount: () => void;
+  showUnifiedTimeline: boolean;
+  onShowUnifiedTimelineChange: (show: boolean) => void;
 }
 
-export function Header({ onAddAccount }: HeaderProps) {
+export function Header({
+  onAddAccount,
+  showUnifiedTimeline,
+  onShowUnifiedTimelineChange,
+}: HeaderProps) {
   const { preference, setPreference } = useColorScheme();
 
   return (
@@ -22,6 +28,12 @@ export function Header({ onAddAccount }: HeaderProps) {
         </Anchor>
       </Group>
       <Group gap="sm">
+        <Switch
+          label="Unified timeline"
+          size="xs"
+          checked={showUnifiedTimeline}
+          onChange={(event) => onShowUnifiedTimelineChange(event.currentTarget.checked)}
+        />
         <SegmentedControl
           value={preference}
           onChange={(value) => setPreference(value as "auto" | "light" | "dark")}

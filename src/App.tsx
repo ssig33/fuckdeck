@@ -6,6 +6,7 @@ import { Header } from "./components/Header";
 import { LoginModal } from "./components/LoginModal";
 import { ColumnLayout } from "./components/ColumnLayout";
 import { Sidebar } from "./components/Sidebar";
+import { getShowUnifiedTimeline, saveShowUnifiedTimeline } from "./utils/storage";
 import {
   exchangeToken,
   getInstanceLimits,
@@ -16,6 +17,12 @@ export function App() {
   const [loginOpened, { open: openLogin, close: closeLogin }] = useDisclosure(false);
   const { pendingAuth, setPendingAuth, addAccount } = useAccounts();
   const [processing, setProcessing] = useState(false);
+  const [showUnifiedTimeline, setShowUnifiedTimelineState] = useState(getShowUnifiedTimeline);
+
+  const setShowUnifiedTimeline = (show: boolean) => {
+    setShowUnifiedTimelineState(show);
+    saveShowUnifiedTimeline(show);
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -68,7 +75,11 @@ export function App() {
         backgroundColor: "var(--mantine-color-body)",
       }}
     >
-      <Header onAddAccount={openLogin} />
+      <Header
+        onAddAccount={openLogin}
+        showUnifiedTimeline={showUnifiedTimeline}
+        onShowUnifiedTimelineChange={setShowUnifiedTimeline}
+      />
       <Box
         style={{
           flex: 1,
@@ -78,7 +89,7 @@ export function App() {
         }}
       >
         <Sidebar />
-        <ColumnLayout />
+        <ColumnLayout showUnifiedTimeline={showUnifiedTimeline} />
       </Box>
       <LoginModal opened={loginOpened} onClose={closeLogin} />
     </Box>

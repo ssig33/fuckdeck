@@ -2,6 +2,7 @@ import { Account, PendingAuth, StoredData, Visibility } from "../types";
 
 const STORAGE_KEY = "fuckdeck_accounts";
 const VISIBILITY_KEY = "fuckdeck_visibility";
+const UNIFIED_TIMELINE_KEY = "fuckdeck_show_unified_timeline";
 
 const DEFAULT_DATA: StoredData = {
   accounts: [],
@@ -63,6 +64,14 @@ export function clearPendingAuth(): void {
   const data = loadStoredData();
   data.pendingAuth = null;
   saveStoredData(data);
+}
+
+export function getShowUnifiedTimeline(): boolean {
+  return localStorage.getItem(UNIFIED_TIMELINE_KEY) === "true";
+}
+
+export function saveShowUnifiedTimeline(show: boolean): void {
+  localStorage.setItem(UNIFIED_TIMELINE_KEY, String(show));
 }
 
 export function getDefaultVisibility(accountId: string): Visibility | null {

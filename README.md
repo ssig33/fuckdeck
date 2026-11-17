@@ -11,6 +11,7 @@ A TweetDeck-like Mastodon client built with React + Mantine.
   - Live updates over streaming, with polling as the fallback
   - Automatic reconnect and a manual reconnect button
   - Older posts load as you scroll
+- Optional unified timeline column combining the home timelines of all accounts
 - Notification column combining all accounts
 - Status actions: reply, favourite, reblog
 - Media viewer for images, video, GIFV and audio

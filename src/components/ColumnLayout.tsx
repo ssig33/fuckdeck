@@ -2,8 +2,13 @@ import { Box, Text } from "@mantine/core";
 import { useAccounts } from "../hooks/useAccounts";
 import { TimelineColumn } from "./TimelineColumn";
 import { NotificationColumn } from "./NotificationColumn";
+import { UnifiedTimelineColumn } from "./UnifiedTimelineColumn";
 
-export function ColumnLayout() {
+interface ColumnLayoutProps {
+  showUnifiedTimeline: boolean;
+}
+
+export function ColumnLayout({ showUnifiedTimeline }: ColumnLayoutProps) {
   const { accounts } = useAccounts();
 
   if (accounts.length === 0) {
@@ -31,6 +36,7 @@ export function ColumnLayout() {
         overflowY: "hidden",
       }}
     >
+      {showUnifiedTimeline && <UnifiedTimelineColumn />}
       {accounts.map((account) => (
         <TimelineColumn key={account.id} account={account} />
       ))}

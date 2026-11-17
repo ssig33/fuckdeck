@@ -13,7 +13,8 @@ src/
 ├── hooks/
 │   ├── useAccounts.tsx      # Account management
 │   ├── useInstanceLimits.ts # Instance posting limits
-│   └── useTimeline.ts       # Timeline fetching
+│   ├── useTimeline.ts       # Timeline fetching
+│   └── useUnifiedTimeline.ts # Home timelines of all accounts merged
 ├── components/
 │   ├── Header.tsx
 │   ├── LoginModal.tsx
@@ -21,6 +22,7 @@ src/
 │   ├── ComposeForm.tsx
 │   ├── ColumnLayout.tsx
 │   ├── TimelineColumn.tsx
+│   ├── UnifiedTimelineColumn.tsx
 │   └── StatusCard.tsx
 └── utils/
     ├── storage.ts      # localStorage operations
@@ -48,6 +50,7 @@ MantineProvider
         ├── Sidebar
         │   └── ComposeForm
         ├── ColumnLayout
+        │   ├── UnifiedTimelineColumn (when enabled in Header)
         │   └── TimelineColumn[] (per account)
         │       └── StatusCard[]
         └── LoginModal
@@ -117,6 +120,18 @@ interface StoredData {
 - Thereafter: Poll every 60 seconds (using `since_id` for delta fetch)
 - New posts are prepended
 
+### Unified Timeline
+
+`useUnifiedTimeline` merges the home timelines of all accounts into one column,
+shown before the account columns when the Header switch is on (stored in
+localStorage under `fuckdeck_show_unified_timeline`).
+
+- A post seen by several accounts is shown once, keyed by `uri`; the first
+  account in the list is used for its actions
+- Posts older than the oldest loaded post of any account that still has more
+  history are hidden, so older pages only add rows at the bottom
+- Loading older posts fetches from that account only
+
 ## Posting
 
 `ComposeForm` component handles status posting.
@@ -151,6 +166,7 @@ demand for accounts added before the limits were persisted.
 | ComposeForm | Post composition with media upload |
 | ColumnLayout | Horizontal layout of account columns |
 | TimelineColumn | Single account timeline, delete button |
+| UnifiedTimelineColumn | Home timelines of all accounts in one column |
 | StatusCard | Single post display (reblog support) |
 | EmojiText | Plain text with custom emoji images |
 
