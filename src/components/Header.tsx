@@ -1,5 +1,6 @@
 import { Group, Title, Button, Anchor, SegmentedControl, Switch } from "@mantine/core";
 import { useColorScheme } from "../contexts/ColorSchemeContext";
+import { useInstallPrompt } from "../hooks/useInstallPrompt";
 
 interface HeaderProps {
   onAddAccount: () => void;
@@ -17,6 +18,7 @@ export function Header({
   onShowUnifiedLocalTimelineChange,
 }: HeaderProps) {
   const { preference, setPreference } = useColorScheme();
+  const install = useInstallPrompt();
 
   return (
     <Group justify="space-between" p="md" style={{ borderBottom: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))" }}>
@@ -56,6 +58,11 @@ export function Header({
           ]}
           size="xs"
         />
+        {install && (
+          <Button onClick={install} size="sm" variant="light">
+            Install app
+          </Button>
+        )}
         <Button onClick={onAddAccount} size="sm">
           Add Account
         </Button>
