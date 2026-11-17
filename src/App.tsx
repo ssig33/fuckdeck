@@ -7,11 +7,43 @@ import { LoginModal } from "./components/LoginModal";
 import { ColumnLayout } from "./components/ColumnLayout";
 import { Sidebar } from "./components/Sidebar";
 import { getShowUnifiedTimeline, saveShowUnifiedTimeline } from "./utils/storage";
-import {
-  exchangeToken,
-  getInstanceLimits,
-  verifyCredentials,
-} from "./utils/mastodon";
+import { exchangeToken, verifyCredentials } from "./utils/mastodon";
+import { checkMiAuth } from "./utils/misskey";
+import { getInstanceLimits } from "./utils/api";
+import { Account, PendingAuth } from "./types";
+
+/** Finishes the login that `pendingAuth` started, from the callback query. */
+async function completeLogin(
+  pendingAuth: PendingAuth,
+  params: URLSearchParams
+): Promise<Account | null> {
+  const base = {
+    id: crypto.randomUUID(),
+    instance: pendingAuth.instance,
+    clientId: pendingAuth.clientId,
+    clientSecret: pendingAuth.clientSecret,
+  };
+
+  if (pendingAuth.platform === "misskey") {
+    const session = params.get("session");
+    if (!session || session !== pendingAuth.session) return null;
+    const { token, user } = await checkMiAuth(pendingAuth.instance, session);
+    const limits = await getInstanceLimits({ instance: pendingAuth.instance, platform: "misskey" });
+    return { ...base, platform: "misskey", accessToken: token, user, limits };
+  }
+
+  const code = params.get("code");
+  if (!code) return null;
+  const token = await exchangeToken(
+    pendingAuth.instance,
+    pendingAuth.clientId,
+    pendingAuth.clientSecret,
+    code
+  );
+  const user = await verifyCredentials(pendingAuth.instance, token);
+  const limits = await getInstanceLimits({ instance: pendingAuth.instance });
+  return { ...base, platform: "mastodon", accessToken: token, user, limits };
+}
 
 export function App() {
   const [loginOpened, { open: openLogin, close: closeLogin }] = useDisclosure(false);
@@ -26,40 +58,23 @@ export function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
+    const hasCallback = params.has("code") || params.has("session");
 
-    if (code && pendingAuth && !processing) {
+    if (hasCallback && pendingAuth && !processing) {
       setProcessing(true);
 
       history.replaceState(null, "", window.location.pathname);
 
       (async () => {
         try {
-          const token = await exchangeToken(
-            pendingAuth.instance,
-            pendingAuth.clientId,
-            pendingAuth.clientSecret,
-            code
-          );
-
-          const user = await verifyCredentials(pendingAuth.instance, token);
-          const limits = await getInstanceLimits(pendingAuth.instance);
-
-          addAccount({
-            id: crypto.randomUUID(),
-            instance: pendingAuth.instance,
-            accessToken: token,
-            clientId: pendingAuth.clientId,
-            clientSecret: pendingAuth.clientSecret,
-            user,
-            limits,
-          });
-
-          setPendingAuth(null);
+          const account = await completeLogin(pendingAuth, params);
+          if (account) {
+            addAccount(account);
+          }
         } catch (err) {
-          console.error("OAuth callback failed:", err);
-          setPendingAuth(null);
+          console.error("Login callback failed:", err);
         } finally {
+          setPendingAuth(null);
           setProcessing(false);
         }
       })();

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Modal, TextInput, Button, Stack, Text } from "@mantine/core";
 import { useAccounts } from "../hooks/useAccounts";
 import { registerApp, getAuthorizationUrl } from "../utils/mastodon";
+import { getMiAuthUrl } from "../utils/misskey";
+import { detectPlatform } from "../utils/api";
 
 interface LoginModalProps {
   opened: boolean;
@@ -27,6 +29,19 @@ export function LoginModal({ opened, onClose }: LoginModalProps) {
     setError(null);
 
     try {
+      if ((await detectPlatform(trimmedInstance)) === "misskey") {
+        const session = crypto.randomUUID();
+        setPendingAuth({
+          platform: "misskey",
+          instance: trimmedInstance,
+          clientId: "",
+          clientSecret: "",
+          session,
+        });
+        window.location.href = getMiAuthUrl(trimmedInstance, session);
+        return;
+      }
+
       const credentials = await registerApp(trimmedInstance);
 
       setPendingAuth({
@@ -49,7 +64,7 @@ export function LoginModal({ opened, onClose }: LoginModalProps) {
         <Stack>
           <TextInput
             label="Instance URL"
-            placeholder="mastodon.social"
+            placeholder="mastodon.social or misskey.io"
             value={instance}
             onChange={(e) => setInstance(e.currentTarget.value)}
             disabled={loading}

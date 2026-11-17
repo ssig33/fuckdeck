@@ -1,12 +1,7 @@
 import { useMemo, useState } from "react";
 import { Card, Group, Avatar, Text, Stack, Image, Box, Anchor, ActionIcon } from "@mantine/core";
 import { Account, MastodonStatus } from "../types";
-import {
-  favouriteStatus,
-  unfavouriteStatus,
-  reblogStatus,
-  unreblogStatus,
-} from "../utils/mastodon";
+import { statusAction } from "../utils/api";
 import { extractGyazoIds } from "../utils/gyazo";
 import { emojifyHtml } from "../utils/emoji";
 import { EmojiText } from "./EmojiText";
@@ -16,9 +11,9 @@ import { GyazoImage } from "./GyazoImage";
 
 interface StatusCardProps {
   status: MastodonStatus;
-  instance: string;
-  token: string;
-  via?: Account;
+  /** The account the status was fetched with; actions are taken as it. */
+  account: Account;
+  showVia?: boolean;
 }
 
 function formatDate(dateString: string): string {
@@ -26,7 +21,7 @@ function formatDate(dateString: string): string {
   return date.toLocaleString();
 }
 
-export function StatusCard({ status, instance, token, via }: StatusCardProps) {
+export function StatusCard({ status, account, showVia }: StatusCardProps) {
   const displayStatus = status.reblog ?? status;
   const isReblog = status.reblog !== null;
   const [favourited, setFavourited] = useState(displayStatus.favourited);
@@ -39,10 +34,10 @@ export function StatusCard({ status, instance, token, via }: StatusCardProps) {
   const handleFavourite = async () => {
     try {
       if (favourited) {
-        await unfavouriteStatus(instance, token, displayStatus.id);
+        await statusAction(account, displayStatus.id, "unfavourite");
         setFavourited(false);
       } else {
-        await favouriteStatus(instance, token, displayStatus.id);
+        await statusAction(account, displayStatus.id, "favourite");
         setFavourited(true);
       }
     } catch (e) {
@@ -53,10 +48,10 @@ export function StatusCard({ status, instance, token, via }: StatusCardProps) {
   const handleReblog = async () => {
     try {
       if (reblogged) {
-        await unreblogStatus(instance, token, displayStatus.id);
+        await statusAction(account, displayStatus.id, "unreblog");
         setReblogged(false);
       } else {
-        await reblogStatus(instance, token, displayStatus.id);
+        await statusAction(account, displayStatus.id, "reblog");
         setReblogged(true);
       }
     } catch (e) {
@@ -91,9 +86,9 @@ export function StatusCard({ status, instance, token, via }: StatusCardProps) {
 
   return (
     <Card p="sm" style={{ borderBottom: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))" }} radius={0}>
-      {via && (
+      {showVia && (
         <Text size="xs" c="dimmed" mb={4}>
-          via @{via.user?.username ?? "?"}@{via.instance}
+          via @{account.user?.username ?? "?"}@{account.instance}
         </Text>
       )}
       {isReblog && (
@@ -203,7 +198,7 @@ export function StatusCard({ status, instance, token, via }: StatusCardProps) {
         opened={replyModalOpened}
         onClose={handleCloseReply}
         replyTo={replyTo}
-        sourceInstance={instance}
+        sourceInstance={account.instance}
       />
       <MediaModal
         opened={mediaModalOpened}

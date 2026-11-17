@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useMediaUpload } from "./useMediaUpload";
+import { Account } from "../types";
 
 // Mock URL.createObjectURL and URL.revokeObjectURL
 const mockCreateObjectURL = vi.fn();
@@ -14,9 +15,17 @@ describe("useMediaUpload", () => {
     mockCreateObjectURL.mockImplementation((file: File) => `blob:${file.name}`);
   });
 
-  const defaultOptions = {
+  const account: Account = {
+    id: "a",
     instance: "mastodon.social",
     accessToken: "test-token",
+    clientId: "client",
+    clientSecret: "secret",
+    user: null,
+  };
+
+  const defaultOptions = {
+    account,
     maxMedia: 4,
   };
 
@@ -90,23 +99,9 @@ describe("useMediaUpload", () => {
   });
 
   describe("addFiles", () => {
-    it("does nothing when instance is empty", () => {
+    it("does nothing without an account", () => {
       const { result } = renderHook(() =>
-        useMediaUpload({ ...defaultOptions, instance: "" })
-      );
-
-      act(() => {
-        result.current.addFiles([
-          new File(["test"], "test.png", { type: "image/png" }),
-        ]);
-      });
-
-      expect(result.current.media).toEqual([]);
-    });
-
-    it("does nothing when accessToken is empty", () => {
-      const { result } = renderHook(() =>
-        useMediaUpload({ ...defaultOptions, accessToken: "" })
+        useMediaUpload({ ...defaultOptions, account: undefined })
       );
 
       act(() => {

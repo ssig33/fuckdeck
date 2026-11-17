@@ -23,9 +23,8 @@ function Row({ index, style, rowRef, statuses }: RowProps) {
     <div style={style} ref={rowRef}>
       <StatusCard
         status={status}
-        instance={sourceAccount.instance}
-        token={sourceAccount.accessToken}
-        via={sourceAccount}
+        account={sourceAccount}
+        showVia
       />
     </div>
   );

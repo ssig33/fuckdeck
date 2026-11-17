@@ -1,6 +1,6 @@
 # FuckDeck Architecture
 
-A TweetDeck-like Mastodon client built with React + Mantine.
+A TweetDeck-like Mastodon and Misskey client built with React + Mantine.
 
 ## Directory Structure
 
@@ -26,7 +26,9 @@ src/
 │   └── StatusCard.tsx
 └── utils/
     ├── storage.ts      # localStorage operations
-    └── mastodon.ts     # Mastodon API
+    ├── api.ts          # Calls dispatched by the account's platform
+    ├── mastodon.ts     # Mastodon API
+    └── misskey.ts      # Misskey API, converted to Mastodon shapes
 ```
 
 ## Layout
@@ -111,6 +113,39 @@ interface StoredData {
     ▼ Save account, clear pendingAuth
 [AccountContext]
 ```
+
+LoginModal reads the server's NodeInfo (`/.well-known/nodeinfo`). When the
+software is Misskey or a fork of it, login uses MiAuth instead:
+
+```
+[LoginModal] → Save pendingAuth (platform: misskey, session)
+    │
+    ▼ Redirect to /miauth/{session}
+[Misskey] → User authorization
+    │
+    ▼ Callback with ?session=xxx
+[App.tsx]
+    │
+    ▼ POST /api/miauth/{session}/check
+[Misskey] → token, user
+```
+
+## Platforms
+
+`Account.platform` is `"mastodon"` (also when missing) or `"misskey"`.
+Components and hooks call `utils/api.ts`, which picks the platform's
+implementation. `utils/misskey.ts` converts Misskey notes, users and
+notifications into the Mastodon types, so the UI only knows Mastodon shapes.
+
+- Favourite is the `❤` reaction; reblog is a renote (`notes/unrenote` undoes it)
+- A renote without its own text, CW or files becomes a reblog; a quote shows
+  the quoted note in a blockquote
+- Note text (MFM) is rendered as plain text with links, mentions and line breaks
+- Custom emojis without a URL in the note use `https://{instance}/emoji/{name}.webp`
+- Visibility: home = unlisted, followers = private, specified = direct
+- Streaming connects the `homeTimeline` and `main` channels. Deletions are
+  not delivered on these channels, so deleted notes stay until reloaded
+- Notification types without a Mastodon counterpart are dropped
 
 ## Timeline Fetching
 

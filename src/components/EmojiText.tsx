@@ -20,6 +20,7 @@ export function EmojiText({ text, emojis }: EmojiTextProps) {
             title={`:${segment.emoji.shortcode}:`}
             className={CUSTOM_EMOJI_CLASS}
             draggable={false}
+            referrerPolicy="no-referrer"
           />
         )
       )}

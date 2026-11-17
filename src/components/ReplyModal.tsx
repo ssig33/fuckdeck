@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Modal, Stack, Textarea, Button, Select, Text } from "@mantine/core";
 import { useAccounts } from "../hooks/useAccounts";
 import { useInstanceLimits } from "../hooks/useInstanceLimits";
-import { postStatus, resolveStatusId } from "../utils/mastodon";
+import { postStatus, resolveStatusId } from "../utils/api";
 import { MastodonStatus, Visibility } from "../types";
 import { VISIBILITY_OPTIONS, isSubmitShortcut, toAccountOptions } from "./compose";
 
@@ -57,12 +57,11 @@ export function ReplyModal({
 
     try {
       const inReplyToId = await resolveStatusId(
-        selectedAccount.instance,
-        selectedAccount.accessToken,
+        selectedAccount,
         replyTo,
         sourceInstance
       );
-      await postStatus(selectedAccount.instance, selectedAccount.accessToken, {
+      await postStatus(selectedAccount, {
         status: content,
         visibility,
         in_reply_to_id: inReplyToId,

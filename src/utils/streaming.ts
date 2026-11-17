@@ -5,10 +5,10 @@ import { getInstanceInfo } from "./mastodon";
 type EventCallback = (event: StreamEvent) => void;
 type StatusChangeCallback = (status: ConnectionStatus) => void;
 
-export class MastodonStreamClient {
+export abstract class StreamClient {
   private ws: WebSocket | null = null;
-  private instance: string;
-  private token: string;
+  protected instance: string;
+  protected token: string;
   private status: ConnectionStatus = 'disconnected';
   private eventCallbacks: EventCallback[] = [];
   private statusCallbacks: StatusChangeCallback[] = [];
@@ -29,19 +29,17 @@ export class MastodonStreamClient {
     try {
       this.setStatus('connecting');
 
-      const { streamingUrl } = await getInstanceInfo(this.instance);
+      const url = await this.getUrl();
       if (attempt !== this.connectAttempt) {
         return;
       }
-
-      const baseUrl = streamingUrl || `wss://${this.instance}`;
-      const url = `${baseUrl}/api/v1/streaming?stream=user&access_token=${this.token}`;
 
       const ws = new WebSocket(url);
       this.ws = ws;
 
       ws.onopen = () => {
         console.log(`[Streaming] Connected to ${this.instance}`);
+        this.subscribe(ws);
         this.setStatus('streaming');
         this.reconnectAttempts = 0;
         this.isInitialConnect = false;
@@ -50,14 +48,9 @@ export class MastodonStreamClient {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-
-          if (data.event && data.payload) {
-            const streamEvent: StreamEvent = {
-              event: data.event,
-              payload: data.payload,
-            };
-            this.notifyEventListeners(streamEvent);
-          }
+          this.toStreamEvents(data).forEach((streamEvent) =>
+            this.notifyEventListeners(streamEvent)
+          );
         } catch (error) {
           console.error('[Streaming] Failed to parse message:', error);
         }
@@ -118,6 +111,13 @@ export class MastodonStreamClient {
     }
   }
 
+  protected abstract getUrl(): Promise<string>;
+
+  /** Called once the socket is open, before it is reported as streaming. */
+  protected subscribe(_ws: WebSocket): void {}
+
+  protected abstract toStreamEvents(message: any): StreamEvent[];
+
   getStatus(): ConnectionStatus {
     return this.status;
   }
@@ -174,6 +174,21 @@ export class MastodonStreamClient {
         console.error(`[Streaming] Reconnect failed for ${this.instance}:`, error);
       });
     }, delay);
+  }
+}
+
+export class MastodonStreamClient extends StreamClient {
+  protected async getUrl(): Promise<string> {
+    const { streamingUrl } = await getInstanceInfo(this.instance);
+    const baseUrl = streamingUrl || `wss://${this.instance}`;
+    return `${baseUrl}/api/v1/streaming?stream=user&access_token=${this.token}`;
+  }
+
+  protected toStreamEvents(message: any): StreamEvent[] {
+    if (message.event && message.payload) {
+      return [{ event: message.event, payload: message.payload }];
+    }
+    return [];
   }
 }
 

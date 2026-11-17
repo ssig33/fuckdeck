@@ -1,12 +1,12 @@
 # FuckDeck
 
-A TweetDeck-like Mastodon client built with React + Mantine.
+A TweetDeck-like Mastodon and Misskey client built with React + Mantine.
 
 **Live Demo:** https://ssig33.github.io/fuckdeck/
 
 ## Features
 
-- Multi-account support
+- Multi-account support, mixing Mastodon and Misskey (and its forks such as Sharkey) servers
 - Multi-column timeline view
   - Live updates over streaming, with polling as the fallback
   - Automatic reconnect and a manual reconnect button
