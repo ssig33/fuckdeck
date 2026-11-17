@@ -6,9 +6,13 @@ import { UnifiedTimelineColumn } from "./UnifiedTimelineColumn";
 
 interface ColumnLayoutProps {
   showUnifiedTimeline: boolean;
+  showUnifiedLocalTimeline: boolean;
 }
 
-export function ColumnLayout({ showUnifiedTimeline }: ColumnLayoutProps) {
+export function ColumnLayout({
+  showUnifiedTimeline,
+  showUnifiedLocalTimeline,
+}: ColumnLayoutProps) {
   const { accounts } = useAccounts();
 
   if (accounts.length === 0) {
@@ -37,6 +41,7 @@ export function ColumnLayout({ showUnifiedTimeline }: ColumnLayoutProps) {
       }}
     >
       {showUnifiedTimeline && <UnifiedTimelineColumn />}
+      {showUnifiedLocalTimeline && <UnifiedTimelineColumn kind="local" />}
       {accounts.map((account) => (
         <TimelineColumn key={account.id} account={account} />
       ))}

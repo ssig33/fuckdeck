@@ -29,8 +29,10 @@ class FakeWebSocket {
     this.closed = true;
   }
 
-  emit(event: string, payload: string) {
-    this.onmessage?.({ data: JSON.stringify({ event, payload }) });
+  send() {}
+
+  emit(event: string, payload: string, stream: string[] = ["user"]) {
+    this.onmessage?.({ data: JSON.stringify({ stream, event, payload }) });
   }
 }
 
@@ -135,6 +137,28 @@ describe("AccountProvider streaming clients", () => {
     expect(result.current.deletedStatusIds.has("a")).toBe(false);
     expect(result.current.connectionStatuses.has("a")).toBe(false);
     expect(result.current.connectionStatuses.get("b")).toBe("streaming");
+  });
+
+  it("keeps local timeline statuses apart and drops them when local streaming stops", async () => {
+    const { result } = await renderWithOpenSockets();
+
+    act(() => {
+      result.current.setLocalTimelineStreaming(true);
+      socketFor("a").emit(
+        "update",
+        JSON.stringify({ id: "l1", created_at: "2026-01-01T00:00:00Z" }),
+        ["public:local"]
+      );
+    });
+
+    expect(result.current.localStreamingStatuses.get("a")?.map((s) => s.id)).toEqual(["l1"]);
+    expect(result.current.streamingStatuses.get("a")).toBeUndefined();
+
+    act(() => {
+      result.current.setLocalTimelineStreaming(false);
+    });
+
+    expect(result.current.localStreamingStatuses.size).toBe(0);
   });
 
   it("forgets everything when the last account is removed", async () => {

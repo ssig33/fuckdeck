@@ -6,7 +6,12 @@ import { Header } from "./components/Header";
 import { LoginModal } from "./components/LoginModal";
 import { ColumnLayout } from "./components/ColumnLayout";
 import { Sidebar } from "./components/Sidebar";
-import { getShowUnifiedTimeline, saveShowUnifiedTimeline } from "./utils/storage";
+import {
+  getShowUnifiedLocalTimeline,
+  getShowUnifiedTimeline,
+  saveShowUnifiedLocalTimeline,
+  saveShowUnifiedTimeline,
+} from "./utils/storage";
 import { exchangeToken, verifyCredentials } from "./utils/mastodon";
 import { checkMiAuth } from "./utils/misskey";
 import { getInstanceLimits } from "./utils/api";
@@ -55,6 +60,14 @@ export function App() {
     setShowUnifiedTimelineState(show);
     saveShowUnifiedTimeline(show);
   };
+  const [showUnifiedLocalTimeline, setShowUnifiedLocalTimelineState] = useState(
+    getShowUnifiedLocalTimeline
+  );
+
+  const setShowUnifiedLocalTimeline = (show: boolean) => {
+    setShowUnifiedLocalTimelineState(show);
+    saveShowUnifiedLocalTimeline(show);
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -94,6 +107,8 @@ export function App() {
         onAddAccount={openLogin}
         showUnifiedTimeline={showUnifiedTimeline}
         onShowUnifiedTimelineChange={setShowUnifiedTimeline}
+        showUnifiedLocalTimeline={showUnifiedLocalTimeline}
+        onShowUnifiedLocalTimelineChange={setShowUnifiedLocalTimeline}
       />
       <Box
         style={{
@@ -104,7 +119,10 @@ export function App() {
         }}
       >
         <Sidebar />
-        <ColumnLayout showUnifiedTimeline={showUnifiedTimeline} />
+        <ColumnLayout
+          showUnifiedTimeline={showUnifiedTimeline}
+          showUnifiedLocalTimeline={showUnifiedLocalTimeline}
+        />
       </Box>
       <LoginModal opened={loginOpened} onClose={closeLogin} />
     </Box>

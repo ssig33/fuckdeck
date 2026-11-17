@@ -132,7 +132,24 @@ export function getHomeTimeline(
   token: string,
   options: GetTimelineOptions = {}
 ): Promise<MastodonStatus[]> {
-  const url = new URL(`https://${instance}/api/v1/timelines/home`);
+  return getTimeline(new URL(`https://${instance}/api/v1/timelines/home`), token, options);
+}
+
+export function getLocalTimeline(
+  instance: string,
+  token: string,
+  options: GetTimelineOptions = {}
+): Promise<MastodonStatus[]> {
+  const url = new URL(`https://${instance}/api/v1/timelines/public`);
+  url.searchParams.set("local", "true");
+  return getTimeline(url, token, options);
+}
+
+function getTimeline(
+  url: URL,
+  token: string,
+  options: GetTimelineOptions
+): Promise<MastodonStatus[]> {
   if (options.sinceId) {
     url.searchParams.set("since_id", options.sinceId);
   }

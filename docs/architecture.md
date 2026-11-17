@@ -52,7 +52,7 @@ MantineProvider
         ├── Sidebar
         │   └── ComposeForm
         ├── ColumnLayout
-        │   ├── UnifiedTimelineColumn (when enabled in Header)
+        │   ├── UnifiedTimelineColumn (home / local, each when enabled in Header)
         │   └── TimelineColumn[] (per account)
         │       └── StatusCard[]
         └── LoginModal
@@ -143,7 +143,8 @@ notifications into the Mastodon types, so the UI only knows Mastodon shapes.
 - Note text (MFM) is rendered as plain text with links, mentions and line breaks
 - Custom emojis without a URL in the note use `https://{instance}/emoji/{name}.webp`
 - Visibility: home = unlisted, followers = private, specified = direct
-- Streaming connects the `homeTimeline` and `main` channels. Deletions are
+- Streaming connects the `homeTimeline` and `main` channels, plus
+  `localTimeline` while the unified local timeline is shown. Deletions are
   not delivered on these channels, so deleted notes stay until reloaded
 - Notification types without a Mastodon counterpart are dropped
 
@@ -166,6 +167,15 @@ localStorage under `fuckdeck_show_unified_timeline`).
 - Posts older than the oldest loaded post of any account that still has more
   history are hidden, so older pages only add rows at the bottom
 - Loading older posts fetches from that account only
+
+The unified local timeline is the same column with `kind="local"`, merging
+each account's server local timeline (`GET /api/v1/timelines/public?local=true`
+or Misskey `notes/local-timeline`). It has its own Header switch
+(`fuckdeck_show_unified_local_timeline`). While it is shown, every stream
+client also subscribes to the local timeline on its existing socket (Mastodon
+`public:local`, Misskey `localTimeline`); those events carry
+`timeline: 'local'` and are kept in `localStreamingStatuses`. Accounts on the
+same server share one local timeline, which the `uri` dedup collapses.
 
 ## Posting
 
@@ -201,7 +211,7 @@ demand for accounts added before the limits were persisted.
 | ComposeForm | Post composition with media upload |
 | ColumnLayout | Horizontal layout of account columns |
 | TimelineColumn | Single account timeline, delete button |
-| UnifiedTimelineColumn | Home timelines of all accounts in one column |
+| UnifiedTimelineColumn | Home or local timelines of all accounts in one column |
 | StatusCard | Single post display (reblog support) |
 | EmojiText | Plain text with custom emoji images |
 

@@ -5,12 +5,16 @@ interface HeaderProps {
   onAddAccount: () => void;
   showUnifiedTimeline: boolean;
   onShowUnifiedTimelineChange: (show: boolean) => void;
+  showUnifiedLocalTimeline: boolean;
+  onShowUnifiedLocalTimelineChange: (show: boolean) => void;
 }
 
 export function Header({
   onAddAccount,
   showUnifiedTimeline,
   onShowUnifiedTimelineChange,
+  showUnifiedLocalTimeline,
+  onShowUnifiedLocalTimelineChange,
 }: HeaderProps) {
   const { preference, setPreference } = useColorScheme();
 
@@ -33,6 +37,14 @@ export function Header({
           size="xs"
           checked={showUnifiedTimeline}
           onChange={(event) => onShowUnifiedTimelineChange(event.currentTarget.checked)}
+        />
+        <Switch
+          label="Unified local timeline"
+          size="xs"
+          checked={showUnifiedLocalTimeline}
+          onChange={(event) =>
+            onShowUnifiedLocalTimelineChange(event.currentTarget.checked)
+          }
         />
         <SegmentedControl
           value={preference}

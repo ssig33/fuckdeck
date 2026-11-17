@@ -326,18 +326,35 @@ function newerThan<T extends { id: string }>(items: T[], sinceId?: string): T[] 
   return sinceId ? sorted.filter((item) => compareIds(item.id, sinceId) > 0) : sorted;
 }
 
-export async function getHomeTimeline(
+async function getTimeline(
+  endpoint: string,
   instance: string,
   token: string,
-  options: PageOptions = {}
+  options: PageOptions
 ): Promise<MastodonStatus[]> {
   const notes = await misskeyRequest<MisskeyNote[]>(
     instance,
     token,
-    "notes/timeline",
+    endpoint,
     pageParams(options)
   );
   return newerThan(notes, options.sinceId).map((n) => toMastodonStatus(n, instance));
+}
+
+export function getHomeTimeline(
+  instance: string,
+  token: string,
+  options: PageOptions = {}
+): Promise<MastodonStatus[]> {
+  return getTimeline("notes/timeline", instance, token, options);
+}
+
+export function getLocalTimeline(
+  instance: string,
+  token: string,
+  options: PageOptions = {}
+): Promise<MastodonStatus[]> {
+  return getTimeline("notes/local-timeline", instance, token, options);
 }
 
 export async function getNotifications(
@@ -454,6 +471,7 @@ export async function getInstanceLimits(instance: string): Promise<InstanceLimit
 
 const HOME_CHANNEL = "home";
 const MAIN_CHANNEL = "main";
+const LOCAL_CHANNEL = "local";
 
 export class MisskeyStreamClient extends StreamClient {
   protected async getUrl(): Promise<string> {
@@ -467,6 +485,16 @@ export class MisskeyStreamClient extends StreamClient {
     ws.send(JSON.stringify({ type: "connect", body: { channel: "main", id: MAIN_CHANNEL } }));
   }
 
+  protected subscribeLocal(ws: WebSocket, enabled: boolean): void {
+    ws.send(
+      JSON.stringify(
+        enabled
+          ? { type: "connect", body: { channel: "localTimeline", id: LOCAL_CHANNEL } }
+          : { type: "disconnect", body: { id: LOCAL_CHANNEL } }
+      )
+    );
+  }
+
   protected toStreamEvents(message: any): StreamEvent[] {
     if (message?.type !== "channel") return [];
     const { id, type, body } = message.body ?? {};
@@ -476,6 +504,15 @@ export class MisskeyStreamClient extends StreamClient {
         {
           event: "update",
           payload: JSON.stringify(toMastodonStatus(body, this.instance)),
+        },
+      ];
+    }
+    if (id === LOCAL_CHANNEL && type === "note") {
+      return [
+        {
+          event: "update",
+          payload: JSON.stringify(toMastodonStatus(body, this.instance)),
+          timeline: "local",
         },
       ];
     }
