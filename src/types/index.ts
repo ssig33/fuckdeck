@@ -53,6 +53,11 @@ export interface MastodonStatus {
   emojis: CustomEmoji[];
 }
 
+export interface UnifiedStatus {
+  status: MastodonStatus;
+  sourceAccount: Account;
+}
+
 export interface InstanceLimits {
   maxCharacters: number;
   maxMediaAttachments: number;

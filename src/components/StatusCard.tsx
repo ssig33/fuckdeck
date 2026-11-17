@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Card, Group, Avatar, Text, Stack, Image, Box, Anchor, ActionIcon } from "@mantine/core";
-import { MastodonStatus } from "../types";
+import { Account, MastodonStatus } from "../types";
 import {
   favouriteStatus,
   unfavouriteStatus,
@@ -18,6 +18,7 @@ interface StatusCardProps {
   status: MastodonStatus;
   instance: string;
   token: string;
+  via?: Account;
 }
 
 function formatDate(dateString: string): string {
@@ -25,7 +26,7 @@ function formatDate(dateString: string): string {
   return date.toLocaleString();
 }
 
-export function StatusCard({ status, instance, token }: StatusCardProps) {
+export function StatusCard({ status, instance, token, via }: StatusCardProps) {
   const displayStatus = status.reblog ?? status;
   const isReblog = status.reblog !== null;
   const [favourited, setFavourited] = useState(displayStatus.favourited);
@@ -90,6 +91,11 @@ export function StatusCard({ status, instance, token }: StatusCardProps) {
 
   return (
     <Card p="sm" style={{ borderBottom: "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))" }} radius={0}>
+      {via && (
+        <Text size="xs" c="dimmed" mb={4}>
+          via @{via.user?.username ?? "?"}@{via.instance}
+        </Text>
+      )}
       {isReblog && (
         <Text size="xs" c="dimmed" mb="xs">
           <EmojiText
