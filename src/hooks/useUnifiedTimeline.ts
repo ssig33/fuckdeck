@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Account, MastodonStatus, UnifiedStatus, ConnectionStatus } from "../types";
-import { getHomeTimeline } from "../utils/mastodon";
+import { getHomeTimeline } from "../utils/api";
 import {
   findLimitingSource,
   mergeUnifiedTimeline,
@@ -95,11 +95,10 @@ export function useUnifiedTimeline(accounts: Account[]): UseUnifiedTimelineResul
             ? latestIdsRef.current.get(account.id)
             : undefined;
           try {
-            const fetched = await getHomeTimeline(
-              account.instance,
-              account.accessToken,
-              { sinceId, limit: PAGE_SIZE }
-            );
+            const fetched = await getHomeTimeline(account, {
+              sinceId,
+              limit: PAGE_SIZE,
+            });
             if (fetched.length > 0) {
               latestIdsRef.current.set(account.id, fetched[0].id);
               setTimelines((prev) => {
@@ -147,7 +146,7 @@ export function useUnifiedTimeline(accounts: Account[]): UseUnifiedTimelineResul
     setIsLoadingOlder(true);
 
     try {
-      const older = await getHomeTimeline(account.instance, account.accessToken, {
+      const older = await getHomeTimeline(account, {
         maxId: limiting.oldest.id,
         limit: PAGE_SIZE,
       });

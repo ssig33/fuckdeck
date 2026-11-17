@@ -1,12 +1,11 @@
 import { useState, useRef } from "react";
-import { UploadedMedia } from "../types";
-import { uploadMedia } from "../utils/mastodon";
+import { Account, UploadedMedia } from "../types";
+import { uploadMedia } from "../utils/api";
 
 const DEFAULT_MAX_MEDIA = 4;
 
 interface UseMediaUploadOptions {
-  instance: string;
-  accessToken: string;
+  account: Account | undefined;
   maxMedia?: number;
 }
 
@@ -23,8 +22,7 @@ interface UseMediaUploadResult {
 }
 
 export function useMediaUpload({
-  instance,
-  accessToken,
+  account,
   maxMedia = DEFAULT_MAX_MEDIA,
 }: UseMediaUploadOptions): UseMediaUploadResult {
   const [media, setMedia] = useState<UploadedMedia[]>([]);
@@ -35,7 +33,7 @@ export function useMediaUpload({
   const canAddMore = media.length < maxMedia;
 
   const addFiles = async (files: File[]) => {
-    if (!instance || !accessToken) return;
+    if (!account) return;
 
     const remainingSlots = maxMedia - media.length;
     const filesToAdd = files.slice(0, remainingSlots);
@@ -52,7 +50,7 @@ export function useMediaUpload({
 
     for (const mediaItem of newMedia) {
       try {
-        const attachment = await uploadMedia(instance, accessToken, mediaItem.file);
+        const attachment = await uploadMedia(account, mediaItem.file);
         setMedia((prev) =>
           prev.map((m) =>
             m.previewUrl === mediaItem.previewUrl

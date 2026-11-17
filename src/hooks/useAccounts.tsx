@@ -8,7 +8,8 @@ import {
   savePendingAuth,
   clearPendingAuth,
 } from "../utils/storage";
-import { MastodonStreamClient, parseStreamPayload } from "../utils/streaming";
+import { StreamClient, parseStreamPayload } from "../utils/streaming";
+import { createStreamClient } from "../utils/api";
 import { byNewest } from "../utils/notification";
 import { MastodonNotification } from "../types/notification";
 
@@ -43,7 +44,7 @@ export function AccountProvider({ children }: AccountProviderProps) {
   const [streamingNotifications, setStreamingNotifications] = useState<UnifiedNotification[]>([]);
   const [connectionStatuses, setConnectionStatuses] = useState<Map<string, ConnectionStatus>>(new Map());
   const [deletedStatusIds, setDeletedStatusIds] = useState<Map<string, Set<string>>>(new Map());
-  const streamClientsRef = useRef<Map<string, MastodonStreamClient>>(new Map());
+  const streamClientsRef = useRef<Map<string, StreamClient>>(new Map());
 
   useEffect(() => {
     setAccounts(getAccounts());
@@ -93,7 +94,7 @@ export function AccountProvider({ children }: AccountProviderProps) {
         return;
       }
 
-      const streamClient = new MastodonStreamClient(account.instance, account.accessToken);
+      const streamClient = createStreamClient(account);
       streamClientsRef.current.set(account.id, streamClient);
 
       streamClient.on('statusChange', (status) => {

@@ -63,8 +63,12 @@ export interface InstanceLimits {
   maxMediaAttachments: number;
 }
 
+/** Which API an account's server speaks. Missing means Mastodon. */
+export type Platform = "mastodon" | "misskey";
+
 export interface Account {
   id: string;
+  platform?: Platform;
   instance: string;
   accessToken: string;
   clientId: string;
@@ -74,9 +78,12 @@ export interface Account {
 }
 
 export interface PendingAuth {
+  platform?: Platform;
   instance: string;
   clientId: string;
   clientSecret: string;
+  /** MiAuth session id, for Misskey. */
+  session?: string;
 }
 
 export interface StoredData {

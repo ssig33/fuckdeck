@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Account, InstanceLimits } from "../types";
-import { DEFAULT_INSTANCE_LIMITS, getInstanceLimits } from "../utils/mastodon";
+import { DEFAULT_INSTANCE_LIMITS } from "../utils/mastodon";
+import { getInstanceLimits } from "../utils/api";
 import { useAccounts } from "./useAccounts";
 
 /**
@@ -18,7 +19,7 @@ export function useInstanceLimits(
     if (!account || account.limits) return;
 
     let cancelled = false;
-    getInstanceLimits(account.instance).then((limits) => {
+    getInstanceLimits(account).then((limits) => {
       if (!cancelled) {
         updateAccount({ ...account, limits });
       }

@@ -45,6 +45,8 @@ function createEmojiImage(doc: Document, emoji: CustomEmoji): HTMLImageElement {
   img.title = `:${emoji.shortcode}:`;
   img.className = CUSTOM_EMOJI_CLASS;
   img.draggable = false;
+  // Some servers (misskey.io) refuse emoji requests with a foreign Referer.
+  img.referrerPolicy = "no-referrer";
   return img;
 }
 

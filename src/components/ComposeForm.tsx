@@ -12,7 +12,7 @@ import {
 import { useAccounts } from "../hooks/useAccounts";
 import { useInstanceLimits } from "../hooks/useInstanceLimits";
 import { useMediaUpload } from "../hooks/useMediaUpload";
-import { postStatus } from "../utils/mastodon";
+import { postStatus } from "../utils/api";
 import {
   getDefaultVisibility,
   saveDefaultVisibility,
@@ -48,8 +48,7 @@ export function ComposeForm() {
     getMediaIds,
     resetRef,
   } = useMediaUpload({
-    instance: selectedAccount?.instance ?? "",
-    accessToken: selectedAccount?.accessToken ?? "",
+    account: selectedAccount,
     maxMedia: limits.maxMediaAttachments,
   });
 
@@ -118,7 +117,7 @@ export function ComposeForm() {
     try {
       const mediaIds = getMediaIds();
 
-      await postStatus(selectedAccount.instance, selectedAccount.accessToken, {
+      await postStatus(selectedAccount, {
         status: content,
         visibility,
         spoiler_text: spoilerText || undefined,

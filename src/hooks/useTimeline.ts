@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Account, MastodonStatus, ConnectionStatus } from "../types";
-import { getHomeTimeline } from "../utils/mastodon";
+import { getHomeTimeline } from "../utils/api";
 import { useAccounts } from "./useAccounts";
 
 const POLL_INTERVAL = 60000;
@@ -59,11 +59,10 @@ export function useTimeline(account: Account): UseTimelineResult {
   const fetchTimeline = useCallback(
     async (sinceId?: string) => {
       try {
-        const newStatuses = await getHomeTimeline(
-          account.instance,
-          account.accessToken,
-          { sinceId, limit: PAGE_SIZE }
-        );
+        const newStatuses = await getHomeTimeline(account, {
+          sinceId,
+          limit: PAGE_SIZE,
+        });
 
         if (newStatuses.length > 0) {
           // A full page may not reach back to sinceId; merging would leave a gap.
@@ -84,7 +83,7 @@ export function useTimeline(account: Account): UseTimelineResult {
         setIsLoading(false);
       }
     },
-    [account.instance, account.accessToken]
+    [account]
   );
 
   const loadOlder = useCallback(async () => {
@@ -96,7 +95,7 @@ export function useTimeline(account: Account): UseTimelineResult {
     setIsLoadingOlder(true);
 
     try {
-      const older = await getHomeTimeline(account.instance, account.accessToken, {
+      const older = await getHomeTimeline(account, {
         maxId: oldestIdRef.current,
         limit: PAGE_SIZE,
       });
@@ -112,7 +111,7 @@ export function useTimeline(account: Account): UseTimelineResult {
       isLoadingOlderRef.current = false;
       setIsLoadingOlder(false);
     }
-  }, [account.instance, account.accessToken, hasMore]);
+  }, [account, hasMore]);
 
   const trimOlder = useCallback(() => {
     setOlderStatuses((prev) => (prev.length > 0 ? [] : prev));

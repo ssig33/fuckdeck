@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Account, UnifiedNotification, ConnectionStatus } from "../types";
-import { byNewest, getNotifications } from "../utils/notification";
+import { byNewest } from "../utils/notification";
+import { getNotifications } from "../utils/api";
 import { useAccounts } from "./useAccounts";
 
 const POLL_INTERVAL = 60000;
@@ -61,11 +62,10 @@ export function useNotifications(accounts: Account[]): UseNotificationsResult {
           const sinceId = useSinceIds
             ? latestIdsRef.current.get(account.id)
             : undefined;
-          const rawNotifications = await getNotifications(
-            account.instance,
-            account.accessToken,
-            { sinceId, limit: PAGE_SIZE }
-          );
+          const rawNotifications = await getNotifications(account, {
+            sinceId,
+            limit: PAGE_SIZE,
+          });
 
           if (rawNotifications.length > 0) {
             latestIdsRef.current.set(account.id, rawNotifications[0].id);
