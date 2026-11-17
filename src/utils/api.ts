@@ -61,6 +61,15 @@ export function getHomeTimeline(
     : mastodon.getHomeTimeline(account.instance, account.accessToken, options);
 }
 
+export function getLocalTimeline(
+  account: Account,
+  options: PageOptions = {}
+): Promise<MastodonStatus[]> {
+  return isMisskey(account)
+    ? misskey.getLocalTimeline(account.instance, account.accessToken, options)
+    : mastodon.getLocalTimeline(account.instance, account.accessToken, options);
+}
+
 export function getNotifications(
   account: Account,
   options: PageOptions = {}

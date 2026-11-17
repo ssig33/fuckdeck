@@ -17,6 +17,7 @@ export abstract class StreamClient {
   private reconnectTimeout: number | null = null;
   private isInitialConnect = true;
   private connectAttempt = 0;
+  private localTimeline = false;
 
   constructor(instance: string, token: string) {
     this.instance = instance;
@@ -40,6 +41,9 @@ export abstract class StreamClient {
       ws.onopen = () => {
         console.log(`[Streaming] Connected to ${this.instance}`);
         this.subscribe(ws);
+        if (this.localTimeline) {
+          this.subscribeLocal(ws, true);
+        }
         this.setStatus('streaming');
         this.reconnectAttempts = 0;
         this.isInitialConnect = false;
@@ -111,7 +115,18 @@ export abstract class StreamClient {
     }
   }
 
+  /** Also receives the server's local timeline while enabled. */
+  setLocalTimeline(enabled: boolean): void {
+    if (this.localTimeline === enabled) return;
+    this.localTimeline = enabled;
+    if (this.ws && this.status === 'streaming') {
+      this.subscribeLocal(this.ws, enabled);
+    }
+  }
+
   protected abstract getUrl(): Promise<string>;
+
+  protected abstract subscribeLocal(ws: WebSocket, enabled: boolean): void;
 
   /** Called once the socket is open, before it is reported as streaming. */
   protected subscribe(_ws: WebSocket): void {}
@@ -177,6 +192,8 @@ export abstract class StreamClient {
   }
 }
 
+const LOCAL_STREAM = "public:local";
+
 export class MastodonStreamClient extends StreamClient {
   protected async getUrl(): Promise<string> {
     const { streamingUrl } = await getInstanceInfo(this.instance);
@@ -184,9 +201,26 @@ export class MastodonStreamClient extends StreamClient {
     return `${baseUrl}/api/v1/streaming?stream=user&access_token=${this.token}`;
   }
 
+  protected subscribeLocal(ws: WebSocket, enabled: boolean): void {
+    ws.send(
+      JSON.stringify({
+        type: enabled ? "subscribe" : "unsubscribe",
+        stream: LOCAL_STREAM,
+      })
+    );
+  }
+
   protected toStreamEvents(message: any): StreamEvent[] {
     if (message.event && message.payload) {
-      return [{ event: message.event, payload: message.payload }];
+      const isLocal =
+        Array.isArray(message.stream) && message.stream[0] === LOCAL_STREAM;
+      return [
+        {
+          event: message.event,
+          payload: message.payload,
+          ...(isLocal ? { timeline: "local" as const } : {}),
+        },
+      ];
     }
     return [];
   }

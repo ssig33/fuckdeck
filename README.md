@@ -12,6 +12,7 @@ A TweetDeck-like Mastodon and Misskey client built with React + Mantine.
   - Automatic reconnect and a manual reconnect button
   - Older posts load as you scroll
 - Optional unified timeline column combining the home timelines of all accounts
+- Optional unified local timeline column combining the local timelines of all accounts' servers
 - Notification column combining all accounts
 - Status actions: reply, favourite, reblog
 - Media viewer for images, video, GIFV and audio

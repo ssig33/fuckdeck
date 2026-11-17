@@ -12,6 +12,7 @@ class FakeWebSocket {
   static instances: FakeWebSocket[] = [];
   url: string;
   closed = false;
+  sent: string[] = [];
   onopen: (() => void) | null = null;
   onmessage: ((event: { data: string }) => void) | null = null;
   onerror: ((error: unknown) => void) | null = null;
@@ -24,6 +25,10 @@ class FakeWebSocket {
 
   close() {
     this.closed = true;
+  }
+
+  send(data: string) {
+    this.sent.push(data);
   }
 }
 
@@ -57,6 +62,54 @@ describe("MastodonStreamClient", () => {
     expect(FakeWebSocket.instances[0].url).toBe(
       "wss://example.com/api/v1/streaming?stream=user&access_token=token"
     );
+  });
+
+  it("subscribes to the local timeline on open when enabled beforehand", async () => {
+    const client = new MastodonStreamClient("example.com", "token");
+    client.setLocalTimeline(true);
+    await client.connect();
+    FakeWebSocket.instances[0].onopen?.();
+
+    expect(FakeWebSocket.instances[0].sent.map((s) => JSON.parse(s))).toEqual([
+      { type: "subscribe", stream: "public:local" },
+    ]);
+  });
+
+  it("subscribes and unsubscribes the local timeline on an open socket", async () => {
+    const client = new MastodonStreamClient("example.com", "token");
+    await client.connect();
+    const socket = FakeWebSocket.instances[0];
+    socket.onopen?.();
+
+    client.setLocalTimeline(true);
+    client.setLocalTimeline(true);
+    client.setLocalTimeline(false);
+
+    expect(socket.sent.map((s) => JSON.parse(s).type)).toEqual([
+      "subscribe",
+      "unsubscribe",
+    ]);
+  });
+
+  it("marks events from the local stream", async () => {
+    const client = new MastodonStreamClient("example.com", "token");
+    const events: unknown[] = [];
+    client.on("event", (e) => events.push(e));
+    await client.connect();
+    const socket = FakeWebSocket.instances[0];
+    socket.onopen?.();
+
+    socket.onmessage?.({
+      data: JSON.stringify({ stream: ["public:local"], event: "update", payload: "{}" }),
+    });
+    socket.onmessage?.({
+      data: JSON.stringify({ stream: ["user"], event: "update", payload: "{}" }),
+    });
+
+    expect(events).toEqual([
+      { event: "update", payload: "{}", timeline: "local" },
+      { event: "update", payload: "{}" },
+    ]);
   });
 
   it("closes the current socket and opens a new one", async () => {

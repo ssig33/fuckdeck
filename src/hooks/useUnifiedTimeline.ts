@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Account, MastodonStatus, UnifiedStatus, ConnectionStatus } from "../types";
-import { getHomeTimeline } from "../utils/api";
+import { getHomeTimeline, getLocalTimeline } from "../utils/api";
 import {
   findLimitingSource,
   mergeUnifiedTimeline,
@@ -34,8 +34,29 @@ function joinAccountIds(accounts: Account[]): string {
   return accounts.map((a) => a.id).join(",");
 }
 
-export function useUnifiedTimeline(accounts: Account[]): UseUnifiedTimelineResult {
-  const { streamingStatuses, connectionStatuses, deletedStatusIds } = useAccounts();
+export type UnifiedTimelineKind = "home" | "local";
+
+const FETCHERS = { home: getHomeTimeline, local: getLocalTimeline };
+
+export function useUnifiedTimeline(
+  accounts: Account[],
+  kind: UnifiedTimelineKind = "home"
+): UseUnifiedTimelineResult {
+  const {
+    streamingStatuses: homeStreamingStatuses,
+    localStreamingStatuses,
+    setLocalTimelineStreaming,
+    connectionStatuses,
+    deletedStatusIds,
+  } = useAccounts();
+  const streamingStatuses = kind === "local" ? localStreamingStatuses : homeStreamingStatuses;
+  const fetchTimeline = FETCHERS[kind];
+
+  useEffect(() => {
+    if (kind !== "local") return;
+    setLocalTimelineStreaming(true);
+    return () => setLocalTimelineStreaming(false);
+  }, [kind, setLocalTimelineStreaming]);
   const [timelines, setTimelines] = useState<Map<string, AccountTimeline>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
@@ -95,7 +116,7 @@ export function useUnifiedTimeline(accounts: Account[]): UseUnifiedTimelineResul
             ? latestIdsRef.current.get(account.id)
             : undefined;
           try {
-            const fetched = await getHomeTimeline(account, {
+            const fetched = await fetchTimeline(account, {
               sinceId,
               limit: PAGE_SIZE,
             });
@@ -131,7 +152,7 @@ export function useUnifiedTimeline(accounts: Account[]): UseUnifiedTimelineResul
       );
       setIsLoading(false);
     },
-    [setError]
+    [fetchTimeline, setError]
   );
 
   const loadOlder = useCallback(async () => {
@@ -146,7 +167,7 @@ export function useUnifiedTimeline(accounts: Account[]): UseUnifiedTimelineResul
     setIsLoadingOlder(true);
 
     try {
-      const older = await getHomeTimeline(account, {
+      const older = await fetchTimeline(account, {
         maxId: limiting.oldest.id,
         limit: PAGE_SIZE,
       });
@@ -168,7 +189,7 @@ export function useUnifiedTimeline(accounts: Account[]): UseUnifiedTimelineResul
       isLoadingOlderRef.current = false;
       setIsLoadingOlder(false);
     }
-  }, [sources, setError]);
+  }, [sources, fetchTimeline, setError]);
 
   const trimOlder = useCallback(() => {
     setTimelines((prev) => {

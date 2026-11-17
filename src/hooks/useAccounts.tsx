@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useRef } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from "react";
 import { Account, PendingAuth, MastodonStatus, ConnectionStatus } from "../types";
 import { UnifiedNotification } from "../types/notification";
 import {
@@ -21,6 +21,9 @@ interface AccountContextValue {
   updateAccount: (account: Account) => void;
   setPendingAuth: (auth: PendingAuth | null) => void;
   streamingStatuses: Map<string, MastodonStatus[]>;
+  /** Local timeline statuses, received only while local streaming is on. */
+  localStreamingStatuses: Map<string, MastodonStatus[]>;
+  setLocalTimelineStreaming: (enabled: boolean) => void;
   streamingNotifications: UnifiedNotification[];
   deletedStatusIds: Map<string, Set<string>>;
   connectionStatuses: Map<string, ConnectionStatus>;
@@ -41,6 +44,8 @@ export function AccountProvider({ children }: AccountProviderProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [pendingAuth, setPendingAuthState] = useState<PendingAuth | null>(null);
   const [streamingStatuses, setStreamingStatuses] = useState<Map<string, MastodonStatus[]>>(new Map());
+  const [localStreamingStatuses, setLocalStreamingStatuses] = useState<Map<string, MastodonStatus[]>>(new Map());
+  const localStreamingRef = useRef(false);
   const [streamingNotifications, setStreamingNotifications] = useState<UnifiedNotification[]>([]);
   const [connectionStatuses, setConnectionStatuses] = useState<Map<string, ConnectionStatus>>(new Map());
   const [deletedStatusIds, setDeletedStatusIds] = useState<Map<string, Set<string>>>(new Map());
@@ -78,6 +83,14 @@ export function AccountProvider({ children }: AccountProviderProps) {
     }
   };
 
+  const setLocalTimelineStreaming = useCallback((enabled: boolean) => {
+    localStreamingRef.current = enabled;
+    streamClientsRef.current.forEach((client) => client.setLocalTimeline(enabled));
+    if (!enabled) {
+      setLocalStreamingStatuses(new Map());
+    }
+  }, []);
+
   const setPendingAuth = (auth: PendingAuth | null) => {
     setPendingAuthState(auth);
     if (auth) {
@@ -95,6 +108,7 @@ export function AccountProvider({ children }: AccountProviderProps) {
       }
 
       const streamClient = createStreamClient(account);
+      streamClient.setLocalTimeline(localStreamingRef.current);
       streamClientsRef.current.set(account.id, streamClient);
 
       streamClient.on('statusChange', (status) => {
@@ -110,7 +124,9 @@ export function AccountProvider({ children }: AccountProviderProps) {
           const payload = parseStreamPayload(event);
           if (payload && typeof payload !== 'string') {
             const newStatus = payload as MastodonStatus;
-            setStreamingStatuses((prev) => {
+            const setStatuses =
+              event.timeline === 'local' ? setLocalStreamingStatuses : setStreamingStatuses;
+            setStatuses((prev) => {
               const next = new Map(prev);
               const current = next.get(account.id) || [];
               next.set(account.id, [newStatus, ...current].slice(0, MAX_STREAMING_STATUSES));
@@ -133,12 +149,15 @@ export function AccountProvider({ children }: AccountProviderProps) {
           }
         } else if (event.event === 'delete') {
           const deletedId = event.payload;
-          setStreamingStatuses((prev) => {
+          const removeDeleted = (prev: Map<string, MastodonStatus[]>) => {
+            const current = prev.get(account.id);
+            if (!current) return prev;
             const next = new Map(prev);
-            const current = next.get(account.id) || [];
             next.set(account.id, current.filter(s => s.id !== deletedId));
             return next;
-          });
+          };
+          setStreamingStatuses(removeDeleted);
+          setLocalStreamingStatuses(removeDeleted);
           setDeletedStatusIds((prev) => {
             const next = new Map(prev);
             const current = next.get(account.id) || new Set<string>();
@@ -167,6 +186,11 @@ export function AccountProvider({ children }: AccountProviderProps) {
         client.disconnect();
         streamClientsRef.current.delete(accountId);
         setStreamingStatuses((prev) => {
+          const next = new Map(prev);
+          next.delete(accountId);
+          return next;
+        });
+        setLocalStreamingStatuses((prev) => {
           const next = new Map(prev);
           next.delete(accountId);
           return next;
@@ -207,6 +231,8 @@ export function AccountProvider({ children }: AccountProviderProps) {
         updateAccount,
         setPendingAuth,
         streamingStatuses,
+        localStreamingStatuses,
+        setLocalTimelineStreaming,
         streamingNotifications,
         deletedStatusIds,
         connectionStatuses,

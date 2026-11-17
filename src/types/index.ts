@@ -105,6 +105,8 @@ export interface PostStatusOptions {
 export type StreamEvent = {
   event: 'update' | 'notification' | 'delete' | 'filters_changed';
   payload: string;
+  /** Set when the event came from the local timeline rather than the home one. */
+  timeline?: 'local';
 };
 
 export type ConnectionStatus = 'streaming' | 'polling' | 'connecting' | 'error';

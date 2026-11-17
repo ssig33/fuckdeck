@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { useUnifiedTimeline } from "./useUnifiedTimeline";
-import { getHomeTimeline } from "../utils/mastodon";
+import { getHomeTimeline, getLocalTimeline } from "../utils/mastodon";
 import { useAccounts } from "./useAccounts";
 import { Account, ConnectionStatus, MastodonStatus } from "../types";
 
 vi.mock("../utils/mastodon", () => ({
   getHomeTimeline: vi.fn(),
+  getLocalTimeline: vi.fn(),
 }));
 
 vi.mock("./useAccounts", () => ({
@@ -38,12 +39,17 @@ function makeStatus(id: string, minute: number): MastodonStatus {
   } as MastodonStatus;
 }
 
+const setLocalTimelineStreaming = vi.fn();
+
 function setContext(
   status: ConnectionStatus,
-  streamed: Map<string, MastodonStatus[]> = new Map()
+  streamed: Map<string, MastodonStatus[]> = new Map(),
+  localStreamed: Map<string, MastodonStatus[]> = new Map()
 ) {
   vi.mocked(useAccounts).mockReturnValue({
     streamingStatuses: streamed,
+    localStreamingStatuses: localStreamed,
+    setLocalTimelineStreaming,
     connectionStatuses: new Map(accounts.map((acc) => [acc.id, status])),
     deletedStatusIds: new Map(),
   } as unknown as ReturnType<typeof useAccounts>);
@@ -59,6 +65,8 @@ describe("useUnifiedTimeline", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.mocked(getHomeTimeline).mockReset();
+    vi.mocked(getLocalTimeline).mockReset();
+    setLocalTimelineStreaming.mockReset();
   });
 
   afterEach(() => {
@@ -139,5 +147,36 @@ describe("useUnifiedTimeline", () => {
       "a4",
       "b2",
     ]);
+  });
+
+  it("shows local timelines and streams them only while mounted", async () => {
+    setContext(
+      "streaming",
+      new Map([["a", [makeStatus("home", 9)]]]),
+      new Map([["b", [makeStatus("b9", 9)]]])
+    );
+    vi.mocked(getLocalTimeline).mockImplementation(async (instance) =>
+      instance === a.instance ? [makeStatus("a5", 5)] : [makeStatus("b6", 6), makeStatus("b4", 4)]
+    );
+
+    const { result, unmount } = renderHook(() => useUnifiedTimeline(accounts, "local"));
+    await flush();
+
+    expect(getHomeTimeline).not.toHaveBeenCalled();
+    expect(result.current.statuses.map((s) => s.status.id)).toEqual(["b9", "b6", "a5"]);
+    expect(setLocalTimelineStreaming).toHaveBeenLastCalledWith(true);
+
+    unmount();
+    expect(setLocalTimelineStreaming).toHaveBeenLastCalledWith(false);
+  });
+
+  it("does not stream the local timeline for the home timeline", async () => {
+    setContext("streaming");
+    vi.mocked(getHomeTimeline).mockResolvedValue([]);
+
+    renderHook(() => useUnifiedTimeline(accounts));
+    await flush();
+
+    expect(setLocalTimelineStreaming).not.toHaveBeenCalled();
   });
 });

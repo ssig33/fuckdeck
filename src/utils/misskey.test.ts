@@ -250,6 +250,32 @@ describe("MisskeyStreamClient", () => {
     expect(client.getStatus()).toBe("streaming");
   });
 
+  it("connects and disconnects the local timeline channel", async () => {
+    const client = new MisskeyStreamClient(HOST, "tok");
+    const events: { event: string; payload: string; timeline?: string }[] = [];
+    client.on("event", (e) => events.push(e));
+    await client.connect();
+    socket.onopen?.();
+
+    client.setLocalTimeline(true);
+    const connect = JSON.parse(socket.sent[2]);
+    expect(connect).toMatchObject({ type: "connect", body: { channel: "localTimeline" } });
+
+    socket.onmessage?.({
+      data: JSON.stringify({
+        type: "channel",
+        body: { id: connect.body.id, type: "note", body: makeNote() },
+      }),
+    });
+    expect(events.map((e) => [e.event, e.timeline])).toEqual([["update", "local"]]);
+
+    client.setLocalTimeline(false);
+    expect(JSON.parse(socket.sent[3])).toEqual({
+      type: "disconnect",
+      body: { id: connect.body.id },
+    });
+  });
+
   it("delivers notes and notifications as Mastodon events", async () => {
     const client = new MisskeyStreamClient(HOST, "tok");
     const events: { event: string; payload: string }[] = [];

@@ -3,7 +3,7 @@ import { useElementSize } from "@mantine/hooks";
 import { useCallback, useRef } from "react";
 import { List, useDynamicRowHeight } from "react-window";
 import { useAccounts } from "../hooks/useAccounts";
-import { useUnifiedTimeline } from "../hooks/useUnifiedTimeline";
+import { UnifiedTimelineKind, useUnifiedTimeline } from "../hooks/useUnifiedTimeline";
 import { UnifiedStatus } from "../types";
 import { StatusCard } from "./StatusCard";
 
@@ -30,7 +30,16 @@ function Row({ index, style, rowRef, statuses }: RowProps) {
   );
 }
 
-export function UnifiedTimelineColumn() {
+const TITLES: Record<UnifiedTimelineKind, string> = {
+  home: "Unified Timeline",
+  local: "Unified Local Timeline",
+};
+
+interface UnifiedTimelineColumnProps {
+  kind?: UnifiedTimelineKind;
+}
+
+export function UnifiedTimelineColumn({ kind = "home" }: UnifiedTimelineColumnProps) {
   const { accounts } = useAccounts();
   const {
     statuses,
@@ -40,7 +49,7 @@ export function UnifiedTimelineColumn() {
     loadOlder,
     trimOlder,
     connectionStatuses,
-  } = useUnifiedTimeline(accounts);
+  } = useUnifiedTimeline(accounts, kind);
   const { ref, height } = useElementSize();
   const scrolledAwayRef = useRef(false);
   const rowHeight = useDynamicRowHeight({
@@ -84,7 +93,7 @@ export function UnifiedTimelineColumn() {
         style={{ borderBottom: BORDER, minHeight: 62 }}
       >
         <Text size="sm" fw={600}>
-          Unified Timeline
+          {TITLES[kind]}
         </Text>
         <Badge
           size="xs"
