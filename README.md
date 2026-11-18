@@ -18,7 +18,7 @@ A TweetDeck-like Mastodon and Misskey client built with React + Mantine.
 - Media viewer for images, video, GIFV and audio
 - Inline previews for Gyazo links
 - Installable as a desktop / home-screen app (PWA), starting offline from the cached app shell
-- Post composition with:
+- Post composition in a collapsible sidebar, with:
   - Account switching
   - Content Warning (CW)
   - Image attachments by file picker or paste (limit fetched from the instance)
