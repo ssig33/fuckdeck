@@ -207,7 +207,7 @@ demand for accounts added before the limits were persisted.
 |-----------|----------------|
 | Header | Title display, add account button |
 | LoginModal | Instance URL input, OAuth initiation |
-| Sidebar | Container for ComposeForm |
+| Sidebar | Collapsible container for ComposeForm (state in localStorage) |
 | ComposeForm | Post composition with media upload |
 | ColumnLayout | Horizontal layout of account columns |
 | TimelineColumn | Single account timeline, delete button |

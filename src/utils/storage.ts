@@ -4,6 +4,7 @@ const STORAGE_KEY = "fuckdeck_accounts";
 const VISIBILITY_KEY = "fuckdeck_visibility";
 const UNIFIED_TIMELINE_KEY = "fuckdeck_show_unified_timeline";
 const UNIFIED_LOCAL_TIMELINE_KEY = "fuckdeck_show_unified_local_timeline";
+const SIDEBAR_COLLAPSED_KEY = "fuckdeck_sidebar_collapsed";
 
 const DEFAULT_DATA: StoredData = {
   accounts: [],
@@ -106,4 +107,12 @@ export function saveDefaultVisibility(
   } catch {
     // ignore
   }
+}
+
+export function getSidebarCollapsed(): boolean {
+  return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+}
+
+export function saveSidebarCollapsed(collapsed: boolean): void {
+  localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
 }
