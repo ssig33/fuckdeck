@@ -1,22 +1,19 @@
 import { Box, Group, Text, ActionIcon, Loader, Badge } from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
-import { List, useDynamicRowHeight } from "react-window";
+import { List, RowComponentProps, useDynamicRowHeight } from "react-window";
 import { useAccounts } from "../hooks/useAccounts";
 import { useNotifications } from "../hooks/useNotifications";
 import { NotificationCard } from "./NotificationCard";
 import { UnifiedNotification } from "../types";
 
 interface RowProps {
-  index: number;
-  style: React.CSSProperties;
-  rowRef: React.Ref<HTMLDivElement>;
   notifications: UnifiedNotification[];
 }
 
-function Row({ index, style, rowRef, notifications }: RowProps) {
+function Row({ index, style, notifications }: RowComponentProps<RowProps>) {
   const item = notifications[index];
   return (
-    <div style={style} ref={rowRef}>
+    <div style={style}>
       <NotificationCard unified={item} />
     </div>
   );
@@ -106,8 +103,6 @@ export function NotificationColumn() {
             rowHeight={rowHeight}
             rowComponent={Row}
             rowProps={{ notifications }}
-            height={height}
-            width={350}
           />
         )}
       </Box>

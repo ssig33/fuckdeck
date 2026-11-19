@@ -1,7 +1,7 @@
 import { Box, Group, Text, Loader, Badge } from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
 import { useCallback, useRef } from "react";
-import { List, useDynamicRowHeight } from "react-window";
+import { List, RowComponentProps, useDynamicRowHeight } from "react-window";
 import { useAccounts } from "../hooks/useAccounts";
 import { UnifiedTimelineKind, useUnifiedTimeline } from "../hooks/useUnifiedTimeline";
 import { UnifiedStatus } from "../types";
@@ -11,16 +11,13 @@ const LOAD_OLDER_THRESHOLD = 5;
 const BORDER = "1px solid light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))";
 
 interface RowProps {
-  index: number;
-  style: React.CSSProperties;
-  rowRef: React.Ref<HTMLDivElement>;
   statuses: UnifiedStatus[];
 }
 
-function Row({ index, style, rowRef, statuses }: RowProps) {
+function Row({ index, style, statuses }: RowComponentProps<RowProps>) {
   const { status, sourceAccount } = statuses[index];
   return (
-    <div style={style} ref={rowRef}>
+    <div style={style}>
       <StatusCard
         status={status}
         account={sourceAccount}
@@ -126,8 +123,6 @@ export function UnifiedTimelineColumn({ kind = "home" }: UnifiedTimelineColumnPr
             rowComponent={Row}
             rowProps={{ statuses }}
             onRowsRendered={handleRowsRendered}
-            height={height}
-            width={350}
           />
         )}
       </Box>
