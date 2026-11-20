@@ -23,7 +23,7 @@ const mockLocalStorage = (() => {
   };
 })();
 
-Object.defineProperty(global, "localStorage", { value: mockLocalStorage });
+Object.defineProperty(globalThis, "localStorage", { value: mockLocalStorage });
 
 describe("storage", () => {
   beforeEach(() => {

@@ -10,7 +10,7 @@ import {
 } from "@mantine/core";
 import { useElementSize } from "@mantine/hooks";
 import { useCallback, useRef } from "react";
-import { List, useDynamicRowHeight } from "react-window";
+import { List, RowComponentProps, useDynamicRowHeight } from "react-window";
 import { Account, MastodonStatus } from "../types";
 import { EmojiText } from "./EmojiText";
 import { useTimeline } from "../hooks/useTimeline";
@@ -24,17 +24,14 @@ interface TimelineColumnProps {
 }
 
 interface RowProps {
-  index: number;
-  style: React.CSSProperties;
-  rowRef: React.Ref<HTMLDivElement>;
   statuses: MastodonStatus[];
   account: Account;
 }
 
-function Row({ index, style, rowRef, statuses, account }: RowProps) {
+function Row({ index, style, statuses, account }: RowComponentProps<RowProps>) {
   const status = statuses[index];
   return (
-    <div style={style} ref={rowRef}>
+    <div style={style}>
       <StatusCard status={status} account={account} />
     </div>
   );
@@ -159,8 +156,6 @@ export function TimelineColumn({ account }: TimelineColumnProps) {
             rowComponent={Row}
             rowProps={{ statuses, account }}
             onRowsRendered={handleRowsRendered}
-            height={height}
-            width={350}
           />
         )}
       </Box>

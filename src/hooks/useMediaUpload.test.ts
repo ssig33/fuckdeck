@@ -6,8 +6,8 @@ import { Account } from "../types";
 // Mock URL.createObjectURL and URL.revokeObjectURL
 const mockCreateObjectURL = vi.fn();
 const mockRevokeObjectURL = vi.fn();
-global.URL.createObjectURL = mockCreateObjectURL;
-global.URL.revokeObjectURL = mockRevokeObjectURL;
+globalThis.URL.createObjectURL = mockCreateObjectURL;
+globalThis.URL.revokeObjectURL = mockRevokeObjectURL;
 
 describe("useMediaUpload", () => {
   beforeEach(() => {

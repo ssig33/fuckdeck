@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { MantineColorScheme } from "@mantine/core";
 
 type ColorSchemePreference = "auto" | "light" | "dark";
+type ResolvedColorScheme = Exclude<ColorSchemePreference, "auto">;
 
 interface ColorSchemeContextValue {
   preference: ColorSchemePreference;
   setPreference: (preference: ColorSchemePreference) => void;
-  effectiveColorScheme: MantineColorScheme;
+  effectiveColorScheme: ResolvedColorScheme;
 }
 
 const ColorSchemeContext = createContext<ColorSchemeContextValue | undefined>(undefined);
@@ -21,7 +21,7 @@ function getStoredPreference(): ColorSchemePreference {
   return "auto";
 }
 
-function getSystemColorScheme(): MantineColorScheme {
+function getSystemColorScheme(): ResolvedColorScheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
@@ -31,9 +31,9 @@ interface ColorSchemeProviderProps {
 
 export function ColorSchemeProvider({ children }: ColorSchemeProviderProps) {
   const [preference, setPreferenceState] = useState<ColorSchemePreference>(getStoredPreference);
-  const [systemColorScheme, setSystemColorScheme] = useState<MantineColorScheme>(getSystemColorScheme);
+  const [systemColorScheme, setSystemColorScheme] = useState<ResolvedColorScheme>(getSystemColorScheme);
 
-  const effectiveColorScheme: MantineColorScheme =
+  const effectiveColorScheme: ResolvedColorScheme =
     preference === "auto" ? systemColorScheme : preference;
 
   const setPreference = (newPreference: ColorSchemePreference) => {

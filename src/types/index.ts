@@ -109,6 +109,6 @@ export type StreamEvent = {
   timeline?: 'local';
 };
 
-export type ConnectionStatus = 'streaming' | 'polling' | 'connecting' | 'error';
+export type ConnectionStatus = 'disconnected' | 'streaming' | 'polling' | 'connecting' | 'error';
 
 export * from "./notification";

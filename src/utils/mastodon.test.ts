@@ -13,7 +13,7 @@ import {
 import { MastodonStatus } from "../types";
 
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+globalThis.fetch = mockFetch;
 
 Object.defineProperty(window, "location", {
   value: {
